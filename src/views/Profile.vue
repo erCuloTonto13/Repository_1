@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
@@ -16,6 +16,8 @@ const noLikesMsg = ref('')
 const userSaveds = ref([])
 const loadingSaveds = ref(true)
 const noSavedsMsg = ref('')
+const userFriends = ref([])
+const loadingFriends = ref(true)
 
 onMounted(async () => {
     try {
@@ -67,6 +69,7 @@ onMounted(async () => {
     }
     fetchUserLikes()
     fetchUserSaveds()
+    fetchUserFriends()
 })
 
 async function fetchUserLikes() {
@@ -131,6 +134,23 @@ async function fetchUserSaveds() {
     }
 }
 
+async function fetchUserFriends() {
+    loadingFriends.value = true
+    try {
+        const token = sessionStorage.getItem('token')
+        const res = await axios.get('friendshipsOfUser', token ? { headers: { 'Authorization': `Bearer ${token}` } } : undefined)
+        if (Array.isArray(res.data)) {
+            userFriends.value = res.data
+        } else {
+            userFriends.value = []
+        }
+    } catch {
+        userFriends.value = []
+    } finally {
+        loadingFriends.value = false
+    }
+}
+
 const userAvatar = computed(() => {
     if (userInfo.value && userInfo.value.foto) {
         if (userInfo.value.foto.startsWith('http')) return userInfo.value.foto
@@ -138,6 +158,65 @@ const userAvatar = computed(() => {
         return '/' + userInfo.value.foto.replace(/^public\//, '')
     }
     return '/icons/favicon.svg'
+})
+
+onMounted(() => {
+    window.addEventListener('focus', updateUserInfo)
+})
+onUnmounted(() => {
+    window.removeEventListener('focus', updateUserInfo)
+})
+
+async function updateUserInfo() {
+    try {
+        const token = sessionStorage.getItem('token')
+        const res = await axios.get('me', { headers: { 'Authorization': `Bearer ${token}` } })
+        if (res.data) {
+            sessionStorage.setItem('user', JSON.stringify(res.data))
+            userInfo.value = res.data
+        }
+    } catch { }
+}
+
+onMounted(async () => {
+    try {
+        userInfo.value = JSON.parse(sessionStorage.getItem('user'))
+        if (!userInfo.value) router.push('/login')
+        else {
+            loadingPosts.value = true
+            const token = sessionStorage.getItem('token')
+            // Llamada a la API personalizada para obtener los posts del usuario
+            const res = await axios.get('viewPostOfUser', token ? { headers: { 'Authorization': `Bearer ${token}` } } : undefined)
+            if (Array.isArray(res.data)) {
+                userPosts.value = res.data
+                if (userPosts.value.length === 0) noPostsMsg.value = 'No hay posts.'
+            } else {
+                userPosts.value = []
+                noPostsMsg.value = 'No hay posts.'
+            }
+        }
+    } catch {
+        userInfo.value = null
+        router.push('/login')
+    } finally {
+        loadingPosts.value = false
+    }
+    fetchUserLikes()
+    fetchUserSaveds()
+    fetchUserFriends()
+
+    // Si el usuario ha sido editado, fuerza recarga de datos desde la API
+    if (sessionStorage.getItem('userEdited') === 'true') {
+        try {
+            const token = sessionStorage.getItem('token')
+            const res = await axios.get('me', { headers: { 'Authorization': `Bearer ${token}` } })
+            if (res.data) {
+                sessionStorage.setItem('user', JSON.stringify(res.data))
+                userInfo.value = res.data
+            }
+        } catch { }
+        sessionStorage.removeItem('userEdited')
+    }
 })
 </script>
 
@@ -158,11 +237,17 @@ const userAvatar = computed(() => {
                             <h2 class="fw-bold fs-3 mb-0 me-2">{{ userInfo.usuario }}</h2>
                             <span v-if="userInfo.verificado" class="badge bg-success me-1">✔ Verificado</span>
                             <span v-if="userInfo.is_admin" class="badge bg-warning text-dark">Administrador</span>
+                            <!-- Botón de editar perfil a la derecha de los badges -->
+                            <button @click="router.push('/EditProfile')" class="btn edit-profile-btn"
+                                title="Editar perfil">
+                                <i class="bi bi-pencil"></i>
+                            </button>
                         </div>
-                        <div class="d-flex gap-4 mb-2 profile-stats">
-                            <div><span class="stat-value">0</span> <span class="stat-label">Posts</span></div>
-                            <div><span class="stat-value">0</span> <span class="stat-label">Followers</span></div>
-                            <div><span class="stat-value">0</span> <span class="stat-label">Following</span></div>
+                        <div class="d-flex gap-4 mb-2 profile-stats align-items-center" style="position: relative;">
+                            <div><span class="stat-value">{{ userPosts.length }}</span> <span
+                                    class="stat-label">Posts</span></div>
+                            <div><span class="stat-value">{{ loadingFriends ? '...' : userFriends.length }}</span> <span
+                                    class="stat-label">Amigos</span></div>
                         </div>
                         <div v-if="userInfo.bio" class="bio mb-2 small">{{ userInfo.bio }}</div>
                     </div>
@@ -183,7 +268,7 @@ const userAvatar = computed(() => {
                     </li>
                 </ul>
                 <div class="tab-content" id="profileTabContent"
-                    style="height: 45vh; overflow-y: auto; background: #232323; color: #fff;">
+                    style="height: 52vh; overflow-y: auto; background: #232323; color: #fff;">
                     <div class="tab-pane fade show active" id="posts" role="tabpanel" aria-labelledby="posts-tab">
                         <div v-if="!loadingPosts && userPosts.length === 0" class="no-posts-message">{{ noPostsMsg }}
                         </div>
@@ -191,15 +276,21 @@ const userAvatar = computed(() => {
                         <div class="posts-grid" v-else>
                             <template v-if="userPosts.length > 0">
                                 <div v-for="post in userPosts" :key="post.id" class="post-item"
-                                    style="background: #181818; color: #fff; border: 1.5px solid #ffd91c; flex-direction: column; cursor: pointer; padding: 0;">
+                                    style="background: #181818; color: #fff; border: 1.5px solid #060606; flex-direction: column; cursor: pointer; padding: 0;">
                                     <a :href="`/posts/${post.id}`"
-                                        style="display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; text-decoration: none; color: inherit; padding: 12px 6px;">
-                                        <div style="font-weight: bold; margin-bottom: 0.2em;">{{ post.titulo }}</div>
-                                        <div style="font-size: 0.95em; color: #bfa600; margin-bottom: 0.2em;">{{
-                                            post.descripcion }}</div>
+                                        style="display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; text-decoration: none; color: inherit; padding: 18px 10px 18px 10px; justify-content: flex-start;">
+                                        <div style="width: 100%;">
+                                            <div
+                                                style="font-weight: bold; font-size: 1.45em; margin-bottom: 0.15em; text-align: center;">
+                                                {{ post.titulo }}</div>
+                                            <div
+                                                style="font-size: 1.12em; color: #ffd91c; margin-bottom: 0.7em; text-align: center;">
+                                                {{ post.descripcion }}</div>
+                                        </div>
+                                        <div style="flex: 1 1 auto;"></div>
                                         <img v-if="post.imagen" :src="'http://localhost:8080/' + post.imagen"
                                             alt="Imagen"
-                                            style="max-width: 90%; max-height: 60px; border-radius: 6px; margin-top: 0.2em;" />
+                                            style="max-width: 95%; max-height: 180px; border-radius: 10px; margin-top: auto; margin-bottom: 1.1em; object-fit: contain; display: block;" />
                                     </a>
                                 </div>
                             </template>
@@ -214,13 +305,19 @@ const userAvatar = computed(() => {
                                 <div v-for="like in userLikes" :key="like.id" class="post-item"
                                     style="background: #181818; color: #fff; border: 1.5px solid #ffd91c; flex-direction: column; cursor: pointer; padding: 0;">
                                     <a :href="`/posts/${like.id}`"
-                                        style="display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; text-decoration: none; color: inherit; padding: 12px 6px;">
-                                        <div style="font-weight: bold; margin-bottom: 0.2em;">{{ like.titulo }}</div>
-                                        <div style="font-size: 0.95em; color: #bfa600; margin-bottom: 0.2em;">{{
-                                            like.descripcion }}</div>
+                                        style="display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; text-decoration: none; color: inherit; padding: 18px 10px 18px 10px; justify-content: flex-start;">
+                                        <div style="width: 100%;">
+                                            <div
+                                                style="font-weight: bold; font-size: 1.45em; margin-bottom: 0.15em; text-align: center;">
+                                                {{ like.titulo }}</div>
+                                            <div
+                                                style="font-size: 1.12em; color: #ffd91c; margin-bottom: 0.7em; text-align: center;">
+                                                {{ like.descripcion }}</div>
+                                        </div>
+                                        <div style="flex: 1 1 auto;"></div>
                                         <img v-if="like.imagen" :src="'http://localhost:8080/' + like.imagen"
                                             alt="Imagen"
-                                            style="max-width: 90%; max-height: 60px; border-radius: 6px; margin-top: 0.2em;" />
+                                            style="max-width: 95%; max-height: 180px; border-radius: 10px; margin-top: auto; margin-bottom: 1.1em; object-fit: contain; display: block;" />
                                     </a>
                                 </div>
                             </template>
@@ -235,13 +332,19 @@ const userAvatar = computed(() => {
                                 <div v-for="saved in userSaveds" :key="saved.id" class="post-item"
                                     style="background: #181818; color: #fff; border: 1.5px solid #ffd91c; flex-direction: column; cursor: pointer; padding: 0;">
                                     <a :href="`/posts/${saved.id}`"
-                                        style="display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; text-decoration: none; color: inherit; padding: 12px 6px;">
-                                        <div style="font-weight: bold; margin-bottom: 0.2em;">{{ saved.titulo }}</div>
-                                        <div style="font-size: 0.95em; color: #bfa600; margin-bottom: 0.2em;">{{
-                                            saved.descripcion }}</div>
+                                        style="display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; text-decoration: none; color: inherit; padding: 18px 10px 18px 10px; justify-content: flex-start;">
+                                        <div style="width: 100%;">
+                                            <div
+                                                style="font-weight: bold; font-size: 1.45em; margin-bottom: 0.15em; text-align: center;">
+                                                {{ saved.titulo }}</div>
+                                            <div
+                                                style="font-size: 1.12em; color: #ffd91c; margin-bottom: 0.7em; text-align: center;">
+                                                {{ saved.descripcion }}</div>
+                                        </div>
+                                        <div style="flex: 1 1 auto;"></div>
                                         <img v-if="saved.imagen" :src="'http://localhost:8080/' + saved.imagen"
                                             alt="Imagen"
-                                            style="max-width: 90%; max-height: 60px; border-radius: 6px; margin-top: 0.2em;" />
+                                            style="max-width: 95%; max-height: 180px; border-radius: 10px; margin-top: auto; margin-bottom: 1.1em; object-fit: contain; display: block;" />
                                     </a>
                                 </div>
                             </template>
@@ -264,8 +367,9 @@ const userAvatar = computed(() => {
 
 .profile-header {
     padding: 20px;
-    border-bottom: 1px solid #dbdbdb;
     align-items: center;
+    border-radius: 18px;
+    /* Bordes redondeados para el header */
     /* font-family and background-color moved to shared rule */
 }
 
@@ -329,12 +433,6 @@ const userAvatar = computed(() => {
     /* Ensure bio text is also dark grey */
 }
 
-/* Override some bootstrap defaults if needed or adjust existing ones */
-/* .container {
-    Example: If container adds unwanted padding for this specific view
-    padding-left: 0;
-    padding-right: 0;
-} */
 
 /* Styling for Tab Navigation and Content */
 .nav-tabs {
@@ -369,19 +467,22 @@ const userAvatar = computed(() => {
 
 .nav-tabs .nav-link.active {
     color: #ffd91c;
-    /* Dark grey for active tab */
+
     background-color: transparent;
     border-top: 1px solid #ffd91c;
-    /* Top border for active tab indicator */
+
     border-bottom-color: transparent;
-    /* Ensure no bottom border from Bootstrap overrides */
+
 }
 
 .tab-content {
-    /* background-color and color inherited from .tab-content's new shared rule */
+
     padding: 20px;
-    /* Restore padding removed from Bootstrap classes */
-    /* height: 45vh; overflow-y: auto; are inline styles, kept them */
+    border-radius: 18px;
+
+    height: 59vh;
+
+    overflow-y: auto;
 }
 
 .tab-placeholder-content {
@@ -407,7 +508,7 @@ const userAvatar = computed(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
+    color: #dbdbdb;
     /* Text color if any, though not explicitly requested for dummy items */
     font-size: 12px;
     /* For any text like "Post Item" if added */
@@ -419,7 +520,7 @@ const userAvatar = computed(() => {
     text-align: center;
     padding: 20px 0;
     font-size: 16px;
-    color: #fff;
+    color: #dbdbdb;
 }
 
 .no-posts-message {
@@ -428,6 +529,37 @@ const userAvatar = computed(() => {
     text-align: center;
     padding: 20px 0 10px 0;
     font-size: 16px;
-    color: #fff;
+    color: #dbdbdb;
+}
+
+.edit-profile-btn {
+    border-radius: 50%;
+    padding: 0.7vh 1vw;
+    /* Más pequeño y responsive */
+    display: flex;
+    align-items: center;
+    margin-left: 1vw;
+    background: transparent;
+    border: 1px solid #dbdbdb;
+    transition: background 0.2s, color 0.2s;
+    min-width: 2.8vh;
+    min-height: 2.8vh;
+    height: 3.5vh;
+    width: 3.5vh;
+    justify-content: center;
+}
+
+.edit-profile-btn i {
+    color: #dbdbdb;
+    transition: color 0.2s;
+}
+
+.edit-profile-btn:hover {
+    background: #dbdbdb;
+    border-color: #dbdbdb;
+}
+
+.edit-profile-btn:hover i {
+    color: #232323;
 }
 </style>

@@ -209,7 +209,7 @@ onMounted(async () => {
     if (sessionStorage.getItem('userEdited') === 'true') {
         try {
             const token = sessionStorage.getItem('token')
-            const res = await axios.get('me', { headers: { 'Authorization': `Bearer ${token}` } })
+            const res = await axios.get('viewUser', { headers: { 'Authorization': `Bearer ${token}` } })
             if (res.data) {
                 sessionStorage.setItem('user', JSON.stringify(res.data))
                 userInfo.value = res.data

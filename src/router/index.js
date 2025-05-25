@@ -27,6 +27,11 @@ const router = createRouter({
       name: 'EditProfile',
       component: EditProfile,
     },
+    {
+      path: '/crearPost',
+      name: 'CrearPost',
+      component: () => import('../views/CrearPost.vue')
+    },
   ],
 })
 

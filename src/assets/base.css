@@ -1,53 +1,74 @@
 /* color palette from <https://github.com/vuejs/theme> */
 :root {
-  --vt-c-white: #ffffff;
-  --vt-c-white-soft: #f8f8f8;
-  --vt-c-white-mute: #f2f2f2;
+  /* Modo Claro */
+  --color-background: #FFFFFF;
+  /* Fondo principal */
+  --color-background-soft: #F4F4F4;
+  /* Fondo secundario */
+  --color-background-mute: #F4F4F4;
 
-  --vt-c-black: #181818;
-  --vt-c-black-soft: #222222;
-  --vt-c-black-mute: #282828;
+  --color-primary: #00BFA6;
+  /* Cian vibrante */
+  --color-secondary: #7B3FF1;
+  /* Violeta gamer */
+  --color-accent: #FF63C3;
+  /* Magenta claro */
 
-  --vt-c-indigo: #2c3e50;
+  --color-border: #E0E0E0;
+  --color-border-hover: #BDBDBD;
 
-  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
-  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
-  --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
-  --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
+  --color-heading: #1A1A1A;
+  /* Texto principal */
+  --color-text: #1A1A1A;
+  /* Texto principal */
+  --color-text-secondary: #666666;
+  /* Texto secundario */
 
-  --vt-c-text-light-1: var(--vt-c-indigo);
-  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
-  --vt-c-text-dark-1: var(--vt-c-white);
-  --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
+  --color-card: #FFFFFF;
+  --color-card-border: #F4F4F4;
+
+  --color-btn-bg: var(--color-primary);
+  --color-btn-text: #fff;
+  --color-btn-bg-hover: var(--color-secondary);
+  --color-btn-text-hover: #fff;
+
+  --font-family-main: 'Inter', 'Poppins', 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
-/* semantic color variables for this project */
-:root {
-  --color-background: var(--vt-c-white);
-  --color-background-soft: var(--vt-c-white-soft);
-  --color-background-mute: var(--vt-c-white-mute);
+html.dark {
+  /* Modo Oscuro (predeterminado) */
+  --color-background: #121212;
+  /* Fondo principal */
+  --color-background-soft: #1E1E1E;
+  /* Fondo secundario */
+  --color-background-mute: #1E1E1E;
 
-  --color-border: var(--vt-c-divider-light-2);
-  --color-border-hover: var(--vt-c-divider-light-1);
+  --color-primary: #00FFC6;
+  /* Cian neón */
+  --color-secondary: #8E44FF;
+  /* Púrpura eléctrico */
+  --color-accent: #FF2C9C;
+  /* Magenta intenso */
 
-  --color-heading: var(--vt-c-text-light-1);
-  --color-text: var(--vt-c-text-light-1);
+  --color-border: #232323;
+  --color-border-hover: #8E44FF;
 
-  --section-gap: 160px;
-}
+  --color-heading: #EAEAEA;
+  /* Texto principal */
+  --color-text: #EAEAEA;
+  /* Texto principal */
+  --color-text-secondary: #A0A0A0;
+  /* Texto secundario */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: var(--vt-c-black);
-    --color-background-soft: var(--vt-c-black-soft);
-    --color-background-mute: var(--vt-c-black-mute);
+  --color-card: #1E1E1E;
+  --color-card-border: #232323;
 
-    --color-border: var(--vt-c-divider-dark-2);
-    --color-border-hover: var(--vt-c-divider-dark-1);
+  --color-btn-bg: var(--color-primary);
+  --color-btn-text: #121212;
+  --color-btn-bg-hover: var(--color-secondary);
+  --color-btn-text-hover: #fff;
 
-    --color-heading: var(--vt-c-text-dark-1);
-    --color-text: var(--vt-c-text-dark-2);
-  }
+  --font-family-main: 'Inter', 'Poppins', 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
 *,
@@ -66,19 +87,7 @@ body {
     color 0.5s,
     background-color 0.5s;
   line-height: 1.6;
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    'Fira Sans',
-    'Droid Sans',
-    'Helvetica Neue',
-    sans-serif;
+  font-family: var(--font-family-main);
   font-size: 15px;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

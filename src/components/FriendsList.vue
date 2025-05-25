@@ -114,7 +114,7 @@ onUnmounted(() => {
   max-width: 320px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
   border: 1.5px solid rgba(255, 255, 255, 0.08);
-  color: #ffd91c;
+  color: #8E44FF;
   z-index: 10;
   backdrop-filter: blur(4px);
 }
@@ -151,7 +151,7 @@ onUnmounted(() => {
   justify-content: flex-start;
   gap: 0.7rem;
   padding: 0.5rem 1.2rem;
-  color: #ffd91c;
+  color: #8E44FF;
   text-decoration: none;
   border-radius: 6px;
   transition: background 0.18s, color 0.18s;
@@ -159,8 +159,8 @@ onUnmounted(() => {
 }
 
 .friend-link:hover {
-  background: #282828;
-  color: #fffbe6;
+  background: #8E44FF;
+  color: #fff;
 }
 
 .friend-avatar {
@@ -201,7 +201,7 @@ onUnmounted(() => {
 
 .friend-name {
   font-size: 1.08rem;
-  color: #ffd91c;
+  color: #8E44FF;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;

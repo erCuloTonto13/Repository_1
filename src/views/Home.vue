@@ -45,8 +45,7 @@ window.addEventListener('storage', () => {
   bottom: 2.5vw;
   width: 54px;
   height: 54px;
-  background: var(--color-primary);
-  color: var(--color-btn-text);
+  color: #fff;
   border-radius: 50%;
   box-shadow: 0 2px 12px #0003;
   display: flex;
@@ -58,8 +57,7 @@ window.addEventListener('storage', () => {
 }
 
 .crear-post-fab:hover {
-  background: var(--color-btn-bg-hover);
-  color: var(--color-btn-text-hover);
+  color: #121212;
   box-shadow: 0 4px 18px #0004;
 }
 

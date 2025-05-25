@@ -357,20 +357,14 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.profile-header,
-.tab-content {
-    /* Apply consistent font stack and background */
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: #232323 !important;
-    color: #fff !important;
+.container {
+    margin-top: 60px;
 }
 
 .profile-header {
+    border-radius: 18px;
     padding: 20px;
     align-items: center;
-    border-radius: 18px;
-    /* Bordes redondeados para el header */
-    /* font-family and background-color moved to shared rule */
 }
 
 .profile-avatar img {
@@ -378,188 +372,124 @@ onMounted(async () => {
     height: 150px;
     object-fit: cover;
     border-radius: 50%;
-}
-
-.profile-info {
-    color: #fff;
+    border: 2px solid #8E44FF;
 }
 
 .profile-info h2 {
     font-size: 28px;
-    font-weight: 300;
-    /* Lighter weight for username, Instagram style */
+    font-weight: 600;
     margin-bottom: 10px;
 }
 
-.profile-info .d-flex.align-items-center .badge {
-    /* Targeting badges next to username */
-    font-size: 0.75rem;
-    padding: 0.4em 0.6em;
+.edit-profile-btn {
+    background: #8E44FF;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    margin-left: 10px;
+    font-size: 1.1em;
+    transition: background 0.2s, color 0.2s;
 }
 
-.profile-info .d-flex.gap-4 {
-    /* This is the stats row */
-    margin-bottom: 10px;
-    font-size: 16px;
-    /* Base size for stat items */
-}
-
-.profile-stats div {
-    /* Each stat item */
-    margin-right: 30px;
-    /* Increased spacing between stat items */
-    text-align: left;
+.edit-profile-btn:hover {
+    color: #121212;
 }
 
 .profile-stats .stat-value {
     font-weight: 600;
-    color: #fff;
-    display: block;
-    /* Make number appear on top */
-    font-size: 1.1em;
-    /* Slightly larger for emphasis */
-}
-
-.profile-stats .stat-label {
-    color: #8e8e8e;
-    /* Lighter color for the label */
-    font-size: 0.9em;
-}
-
-.profile-info .bio {
-    font-size: 16px;
-    line-height: 1.4;
-    color: #fff;
-    /* Ensure bio text is also dark grey */
+    color: #8E44FF;
 }
 
 
-/* Styling for Tab Navigation and Content */
-.nav-tabs {
-    border-bottom: 1px solid #dbdbdb;
-    /* Light border for the bottom of the tab bar */
-}
-
-.nav-tabs .nav-item {
-    margin-bottom: -1px;
-    /* Align active tab's border with the .nav-tabs border */
-}
-
-.nav-tabs .nav-link {
-    color: #8e8e8e;
-    /* Medium grey for inactive tabs */
-    background-color: transparent;
-    border: none;
-    /* Remove default Bootstrap borders */
-    border-top: 1px solid transparent;
-    /* Placeholder for active state */
-    padding: 1rem 1rem;
-    font-size: 14px;
+.nav-link {
+    border-bottom: none;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    
 }
 
-.nav-tabs .nav-link:hover {
-    color: #ffd91c;
-    /* Darker color on hover for inactive tabs */
-}
-
-.nav-tabs .nav-link.active {
-    color: #ffd91c;
-
-    background-color: transparent;
-    border-top: 1px solid #ffd91c;
-
-    border-bottom-color: transparent;
-
+.nav-link.active {
+    
+    color: #8E44FF;
+    border-bottom: 2px solid #8E44FF;
 }
 
 .tab-content {
 
-    padding: 20px;
-    border-radius: 18px;
-
-    height: 59vh;
-
-    overflow-y: auto;
-}
-
-.tab-placeholder-content {
-    text-align: center;
-    color: #8e8e8e;
+    border-radius: 12px;
+    
 }
 
 .posts-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    /* 3 columns */
-    gap: 4px;
-    /* Small gap between items, Instagram-like */
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+    margin-top: 1.5em;
 }
 
 .post-item {
-    aspect-ratio: 1 / 1;
-    /* Square items */
-    background-color: #e0e0e0;
-    /* Light grey background for items */
-    border: 1px solid #dbdbdb;
-    /* Slightly darker border */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #dbdbdb;
-    /* Text color if any, though not explicitly requested for dummy items */
-    font-size: 12px;
-    /* For any text like "Post Item" if added */
+
+    border-radius: 10px;
+    padding: 0;
+    transition: box-shadow 0.2s;
 }
 
-.loading-spinner {
-    grid-column: span 3;
-    /* Ocupa las 3 columnas */
+.post-item:hover {
+    box-shadow: 0 2px 12px #0002;
+    border-color: #8E44FF;
+}
+
+.post-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    text-decoration: none;
+    color: inherit;
+    padding: 18px 10px 18px 10px;
+    justify-content: flex-start;
+}
+
+.post-title {
+    font-weight: bold;
+    font-size: 1.45em;
+    margin-bottom: 0.15em;
     text-align: center;
-    padding: 20px 0;
-    font-size: 16px;
-    color: #dbdbdb;
+
+}
+
+.post-desc {
+    font-size: 1.12em;
+    color: #8E44FF;
+    margin-bottom: 0.7em;
+    text-align: center;
+}
+
+.post-img {
+    max-width: 95%;
+    max-height: 180px;
+    border-radius: 10px;
+    margin-top: auto;
+    margin-bottom: 1.1em;
+    object-fit: contain;
+    display: block;
 }
 
 .no-posts-message {
-    grid-column: span 3;
-    /* Ocupa las 3 columnas */
+
     text-align: center;
-    padding: 20px 0 10px 0;
-    font-size: 16px;
-    color: #dbdbdb;
+    margin-top: 2em;
 }
 
-.edit-profile-btn {
-    border-radius: 50%;
-    padding: 0.7vh 1vw;
-    /* Más pequeño y responsive */
-    display: flex;
-    align-items: center;
-    margin-left: 1vw;
-    background: transparent;
-    border: 1px solid #dbdbdb;
-    transition: background 0.2s, color 0.2s;
-    min-width: 2.8vh;
-    min-height: 2.8vh;
-    height: 3.5vh;
-    width: 3.5vh;
-    justify-content: center;
+
+.badge.bg-success {
+    background: #8E44FF;
+    color: #fff;
 }
 
-.edit-profile-btn i {
-    color: #dbdbdb;
-    transition: color 0.2s;
+.badge.bg-warning {
+    background: #8E44FF;
+    color: #fff;
 }
 
-.edit-profile-btn:hover {
-    background: #dbdbdb;
-    border-color: #dbdbdb;
-}
-
-.edit-profile-btn:hover i {
-    color: #232323;
-}
 </style>

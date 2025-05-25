@@ -11,8 +11,6 @@
 
 <style scoped>
 .crear-post-container {
-    background: var(--color-card);
-    color: var(--color-text);
     border-radius: 16px;
     padding: 2em;
     max-width: 500px;

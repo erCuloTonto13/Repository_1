@@ -10,7 +10,7 @@ axios.defaults.baseURL = 'http://localhost:8080/api/'
 
 const data = ref(null)
 const error = ref(null)
-const commentsCount = ref({}) 
+const commentsCount = ref({})
 const likesCount = ref({})
 
 function getImageUrl(path) {
@@ -22,7 +22,7 @@ function getImageUrl(path) {
 async function fetchCommentsCount(postId) {
     try {
         const response = await axios.get(`commentsOfPost/${postId}`)
-        
+
         commentsCount.value[postId] = Array.isArray(response.data.comments) ? response.data.comments.length : 0
     } catch (e) {
         commentsCount.value[postId] = 0
@@ -66,8 +66,8 @@ onMounted(async () => {
                     <a class="card-link" :href="`/posts/${item.id}`" tabindex="0" target="_self"
                         style="text-decoration: none; color: inherit; display: block;">
                         <div class="card-content">
-                            <p class="h5 mb-1">{{ item.titulo }}</p>
-                            <p class="h6 text-white mb-0">{{ item.descripcion }}</p>
+                            <p class="h5 mb-1 card-title">{{ item.titulo }}</p>
+                            <p class="h6 text-muted pt-2 mb-3">{{ item.descripcion }}</p>
                             <img v-if="item.imagen" :src="getImageUrl(item.imagen)" alt="Imagen" class="card-img"
                                 @error="event.target.style.display = 'none'" />
                         </div>
@@ -103,7 +103,6 @@ onMounted(async () => {
     justify-content: flex-start;
     min-height: calc(100vh - 9vh);
     width: 100vw;
-    background-color: #161515;
     overflow: auto;
     padding-top: 3vh;
 }
@@ -117,10 +116,11 @@ onMounted(async () => {
 }
 
 .card {
-    background: #222;
-    color: #ffd91c;
-    border-radius: 1vw;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+    border: none;
+    padding-bottom: 0.5vh;
+    border-bottom: 0.3vh solid #ffd600;
+    background-color: transparent;
     width: 60vw;
     min-width: 260px;
     max-width: 700px;
@@ -129,12 +129,13 @@ onMounted(async () => {
     transition: box-shadow 0.2s, transform 0.2s;
     display: flex;
     flex-direction: column;
+
 }
 
 .card:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.2);
     transform: translateY(-0.5vh);
-    background: #2b2b2b;
+
 }
 
 .card.has-image {
@@ -159,10 +160,10 @@ onMounted(async () => {
 
 .iconos {
     display: flex;
+    background-color: transparent;
     gap: 2vw;
     align-items: center;
     justify-content: center;
-    border-top: 0.1vh solid rgb(49, 48, 48);
     padding: 1vh;
     z-index: 4;
 }
@@ -170,34 +171,79 @@ onMounted(async () => {
 .icon-action {
     display: flex;
     align-items: center;
+    justify-content: center;
+    min-width: 64px;
+    height: 38px;
+    padding: 0 18px;
+    background: #fff;
+    border-radius: 22px/19px;
+    box-shadow: 0 2px 8px #0001;
     font-size: 1.5rem;
     cursor: pointer;
-    transition: transform 0.1s;
+    transition: transform 0.1s, box-shadow 0.18s;
+    margin: 0 0.2vw;
+    border: 1.5px solid #f4f4f4;
 }
 
 .icon-action:hover {
-    transform: scale(1.2);
-    filter: brightness(1.3);
+    transform: scale(1.08);
+    filter: brightness(1.1);
+    box-shadow: 0 4px 16px #8E44FF22;
 }
 
 .icon-action img {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     object-fit: contain;
     display: block;
+    margin-right: 0.5em;
+    filter: brightness(0) invert(0);
+    /*Cambia los iconos blancos en negro */
 }
 
 .icon-count {
-    font-size: 1rem;
-    color: #ffd91c;
-    margin-left: 0.3em;
+    font-size: 1.08rem;
+    color: #232323;
+    font-weight: 600;
+    margin-left: 0.1em;
     vertical-align: middle;
 }
 
 .comment-count {
     font-size: 1rem;
-    color: #ffd91c;
+
     margin-left: 0.3em;
     vertical-align: middle;
+}
+
+.card-container {
+    border-radius: 14px;
+    box-shadow: 0 2px 12px #0002;
+    padding: 1.5em 1em;
+    margin: 1em auto;
+
+}
+
+.card-title {
+
+    font-weight: 600;
+    width: 100%;
+    text-align: center;
+    padding-bottom: 0.7vh;
+}
+
+
+.card-action {
+    background: #FF1744;
+    color: #fff;
+    border-radius: 8px;
+    padding: 0.5em 1em;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    border: none;
+}
+
+.card-action:hover {
+    color: #121212;
 }
 </style>

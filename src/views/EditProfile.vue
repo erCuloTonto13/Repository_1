@@ -137,15 +137,15 @@ onMounted(async () => {
 
 <style scoped>
 .edit-profile-container {
-    margin-top: 40px;
+    margin-top: 60px;
 }
 
 .profile-header {
-    background: #232323;
-    color: #fff;
+
     border-radius: 18px;
     padding: 20px;
     align-items: center;
+    
 }
 
 .profile-avatar img {
@@ -153,40 +153,34 @@ onMounted(async () => {
     height: 120px;
     object-fit: cover;
     border-radius: 50%;
-    border: 2px solid #ffd91c;
+    border: 2px solid #8E44FF;
 }
 
 .profile-info h2 {
     font-size: 28px;
-    font-weight: 300;
+    font-weight: 600;
     margin-bottom: 10px;
+
 }
 
 .edit-profile-form {
-    background: #232323;
-    color: #fff;
+
     border-radius: 18px;
     padding: 30px 24px 24px 24px;
     box-shadow: 0 2px 8px #0002;
+
 }
 
 .edit-profile-form label {
-    color: #ffd91c;
+    color: #8E44FF;
     font-weight: 500;
 }
 
-.edit-profile-form input,
-.edit-profile-form textarea {
-    background: #181818;
-    color: #fff;
-    border: 1px solid #dbdbdb;
-}
 
 .edit-profile-form input:focus,
 .edit-profile-form textarea:focus {
-    background: #232323;
-    color: #fff;
-    border-color: #dbdbdb;
+
+    border-color: #8E44FF;
     box-shadow: none;
 }
 
@@ -194,19 +188,20 @@ onMounted(async () => {
     display: inline-block;
     padding: 0.5em 1.2em;
     cursor: pointer;
-    background: #181818;
-    color: #ffd91c;
-    border: 1.5px solid #ffd91c;
+
+    color: #8E44FF;
+    border: 1.5px solid #8E44FF;
     border-radius: 6px;
     font-weight: 600;
     transition: background 0.2s, color 0.2s, border 0.2s;
     margin-bottom: 0.5em;
+
 }
 
 .custom-file-upload:hover {
-    background: #232323;
-    color: #ffd91c;
-    border-color: #ffd91c;
+
+    color: #8E44FF;
+    border-color: #8E44FF;
 }
 
 .edit-profile-form input[type="file"] {
@@ -214,25 +209,26 @@ onMounted(async () => {
 }
 
 .btn-warning {
-    background: #ffd91c;
-    color: #232323;
+    background: #8E44FF;
+    color: #fff;
     border: none;
     font-weight: 600;
 }
 
 .btn-warning:hover {
-    background: #e6c200;
-    color: #232323;
+
+    color: #121212;
 }
 
 .btn-secondary {
-    background: #444;
+    background: #8E44FF;
     color: #fff;
     border: none;
 }
 
 .btn-secondary:hover {
-    background: #232323;
-    color: #ffd91c;
+
+    color: #8E44FF;
 }
+
 </style>

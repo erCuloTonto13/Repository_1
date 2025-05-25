@@ -5,13 +5,6 @@ const logoSrc = ref('/public/favicon2.png')
 const hasToken = ref(!!sessionStorage.getItem('token'))
 const userInfo = ref(null)
 
-function onLogoEnter() {
-    logoSrc.value = '/public/favicon3.png'
-}
-function onLogoLeave() {
-    logoSrc.value = '/public/favicon2.png'
-}
-
 function updateTokenStatus() {
     hasToken.value = sessionStorage.getItem('token') !== null;
     if (hasToken.value) {
@@ -53,8 +46,7 @@ onMounted(updateTokenStatus)
     <nav class="navbar navbar-expand-md navbar-dark">
         <div class="container-fluid container pb-3">
             <!-- Parte Izquierda -->
-            <a class="navbar-brand d-flex align-items-center ml-5" href="/" @mouseenter="onLogoEnter"
-                @mouseleave="onLogoLeave">
+            <a class="navbar-brand d-flex align-items-center ml-5" href="/">
                 <img :src="logoSrc" width="32" alt="Logo" />
                 <span class="fw-semibold fs-4">POMSE</span>
             </a>
@@ -96,8 +88,8 @@ onMounted(updateTokenStatus)
 }
 
 .navbar {
-    background: linear-gradient(to bottom, #222 73%, black 80%, transparent 93%);
-    height: 9vh;
+    background: black;
+    height: 7vh;
     min-height: 48px;
     position: fixed;
     top: 0;
@@ -120,12 +112,6 @@ onMounted(updateTokenStatus)
     .navbar-brand img {
         width: 24px;
     }
-}
-
-.navbar .navbar-brand,
-.navbar .nav-link,
-.navbar span {
-    color: rgb(255, 221, 28) !important;
 }
 
 .avatar-img-header {
@@ -151,7 +137,7 @@ onMounted(updateTokenStatus)
 .dropdown-menu {
     background: #232323;
     color: #fff;
-    border: 1px solid #bfa600;
+    border: 1px solid #00FFC6;
 }
 
 .dropdown-item {
@@ -161,11 +147,19 @@ onMounted(updateTokenStatus)
 
 .dropdown-item:hover,
 .dropdown-item:focus {
-    background: #282828;
-    color: #ffd91c;
+    background: #8E44FF33;
+    color: #8E44FF;
 }
 
 .dropdown-item.text-danger {
     color: #ff4d4f;
+}
+
+.page-title {
+    color: #fff !important;
+    border-bottom: 2.5px solid #00FFC6;
+    padding-bottom: 2px;
+    line-height: 1.1;
+    box-shadow: 0 2px 8px #00ffc666;
 }
 </style>

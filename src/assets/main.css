@@ -1,0 +1,33 @@
+/* Light Theme (Default) */
+:root {
+  --color-background: #FFFFFF; /* Fondo principal */
+  --color-text: #1A1A1A; /* Texto principal */
+  --color-text-secondary: #666666; /* Texto secundario */
+  --color-primary: #00BFA6; /* Color primario */
+  --color-secondary: #7B3FF1; /* Color secundario */
+  --color-accent: #FF63C3; /* Acento */
+  --color-border: #E0E0E0; /* Light grey border */
+  --color-danger: #dc3545; /* Danger color */
+  
+  --color-card-background: #F4F4F4; /* Fondo secundario */
+  --color-header-background: #F4F4F4; /* Fondo secundario */
+  --color-header-text: #1A1A1A; /* Texto principal */
+  /* Old profile-specific variables removed as they are covered by generic ones */
+}
+
+/* Dark Theme */
+html[data-theme='dark'] {
+  --color-background: #121212; /* Fondo principal */
+  --color-text: #EAEAEA; /* Texto principal */
+  --color-text-secondary: #A0A0A0; /* Texto secundario */
+  --color-primary: #00FFC6; /* Color primario */
+  --color-secondary: #8E44FF; /* Color secundario */
+  --color-accent: #FF2C9C; /* Acento */
+  --color-border: #2B2B2B; /* Dark grey border */
+  --color-danger: #ff4d4f; /* Danger color for dark theme */
+
+  --color-card-background: #1E1E1E; /* Fondo secundario */
+  --color-header-background: #1E1E1E; /* Fondo secundario */
+  --color-header-text: #EAEAEA; /* Texto principal */
+  /* Old profile-specific variables removed as they are covered by generic ones */
+}

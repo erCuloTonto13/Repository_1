@@ -67,7 +67,7 @@ onMounted(async () => {
                         style="text-decoration: none; color: inherit; display: block;">
                         <div class="card-content">
                             <p class="h5 mb-1">{{ item.titulo }}</p>
-                            <p class="h6 text-white mb-0">{{ item.descripcion }}</p>
+                            <p class="h6 mb-0">{{ item.descripcion }}</p> <!-- Removed text-white class -->
                             <img v-if="item.imagen" :src="getImageUrl(item.imagen)" alt="Imagen" class="card-img"
                                 @error="event.target.style.display = 'none'" />
                         </div>
@@ -101,9 +101,9 @@ onMounted(async () => {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    min-height: calc(100vh - 9vh);
+    min-height: calc(100vh - 9vh); 
     width: 100vw;
-    background-color: #161515;
+    background-color: var(--color-background); /* Use main background */
     overflow: auto;
     padding-top: 3vh;
 }
@@ -117,10 +117,11 @@ onMounted(async () => {
 }
 
 .card {
-    background: #222;
-    color: #ffd91c;
+    background: var(--color-card-background); /* Updated */
+    color: var(--color-text); 
+    border: 1px solid var(--color-border); 
     border-radius: 1vw;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); 
     width: 60vw;
     min-width: 260px;
     max-width: 700px;
@@ -132,9 +133,11 @@ onMounted(async () => {
 }
 
 .card:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); /* Consider theming shadows later */
     transform: translateY(-0.5vh);
-    background: #2b2b2b;
+    /* For hover, a subtle change. Could be a new variable --color-card-background-hover */
+    /* For now, let's make it slightly brighter or darker based on theme via filter if simple, or use --color-background */
+    background: var(--color-background); 
 }
 
 .card.has-image {
@@ -146,6 +149,10 @@ onMounted(async () => {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+}
+
+.card-link .h6 { /* Description text */
+    color: var(--color-text-secondary) !important; /* Use new secondary text variable */
 }
 
 .card-img {
@@ -162,7 +169,7 @@ onMounted(async () => {
     gap: 2vw;
     align-items: center;
     justify-content: center;
-    border-top: 0.1vh solid rgb(49, 48, 48);
+    border-top: 1px solid var(--color-border); /* Updated */
     padding: 1vh;
     z-index: 4;
 }
@@ -177,27 +184,23 @@ onMounted(async () => {
 
 .icon-action:hover {
     transform: scale(1.2);
-    filter: brightness(1.3);
+    filter: brightness(1.3); /* This filter might need adjustment based on icon color and theme */
 }
 
-.icon-action img {
+.icon-action img { /* Styles for the icons themselves */
     width: 28px;
     height: 28px;
     object-fit: contain;
     display: block;
+    /* Consider filter: var(--icon-filter); if icons need to change color with theme */
 }
 
 .icon-count {
     font-size: 1rem;
-    color: #ffd91c;
+    color: var(--color-text); 
     margin-left: 0.3em;
     vertical-align: middle;
 }
 
-.comment-count {
-    font-size: 1rem;
-    color: #ffd91c;
-    margin-left: 0.3em;
-    vertical-align: middle;
-}
+/* .comment-count is a duplicate of .icon-count, removing it */
 </style>

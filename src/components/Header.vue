@@ -4,6 +4,18 @@ import { ref, computed, onMounted } from 'vue'
 const logoSrc = ref('/public/favicon2.png')
 const hasToken = ref(!!sessionStorage.getItem('token'))
 const userInfo = ref(null)
+const isDarkMode = ref(false) // Default to light mode
+
+function toggleTheme() {
+    isDarkMode.value = !isDarkMode.value;
+    if (isDarkMode.value) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light'); // Or localStorage.removeItem('theme') if light is default
+    }
+}
 
 function onLogoEnter() {
     logoSrc.value = '/public/favicon3.png'
@@ -46,7 +58,24 @@ const userAvatar = computed(() => {
     return '/icons/favicon.svg'
 })
 
-onMounted(updateTokenStatus)
+onMounted(() => {
+    updateTokenStatus(); // Keep existing onMounted logic
+
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === null) {
+        // No theme preference found, default to dark mode
+        isDarkMode.value = true;
+        document.documentElement.setAttribute('data-theme', 'dark');
+        // Optionally, save this default to localStorage so it's "sticky" until changed
+        // localStorage.setItem('theme', 'dark'); 
+    } else if (savedTheme === 'dark') {
+        isDarkMode.value = true;
+        document.documentElement.setAttribute('data-theme', 'dark');
+    } else { // savedTheme === 'light'
+        isDarkMode.value = false;
+        document.documentElement.removeAttribute('data-theme');
+    }
+})
 </script>
 
 <template>
@@ -58,6 +87,10 @@ onMounted(updateTokenStatus)
                 <img :src="logoSrc" width="32" alt="Logo" />
                 <span class="fw-semibold fs-4">POMSE</span>
             </a>
+            <!-- Theme Toggle Button -->
+            <button id="theme-toggle-btn" class="btn btn-sm ms-2" @click="toggleTheme">
+                {{ isDarkMode ? '🌙' : '☀️' }}
+            </button>
             <!-- Parte Derecha -->
             <div class="collapse navbar-collapse justify-content-end">
                 <ul class="navbar-nav mb-md-0">
@@ -96,7 +129,8 @@ onMounted(updateTokenStatus)
 }
 
 .navbar {
-    background: linear-gradient(to bottom, #222 73%, black 80%, transparent 93%);
+    /* background: linear-gradient(to bottom, #222 73%, black 80%, transparent 93%); */
+    background: var(--color-header-background); /* Updated to use CSS variable */
     height: 9vh;
     min-height: 48px;
     position: fixed;
@@ -124,8 +158,8 @@ onMounted(updateTokenStatus)
 
 .navbar .navbar-brand,
 .navbar .nav-link,
-.navbar span {
-    color: rgb(255, 221, 28) !important;
+.navbar span { /* This affects the POMSE brand text and nav links */
+    color: var(--color-header-text) !important; /* Updated */
 }
 
 .avatar-img-header {
@@ -135,9 +169,9 @@ onMounted(updateTokenStatus)
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: #161515;
+    background: var(--color-background); /* Use a background that contrasts with avatar */
     overflow: hidden;
-    border: none;
+    border: 1px solid var(--color-border); /* Add a subtle border */
     margin-right: 0.5em;
 }
 
@@ -149,23 +183,37 @@ onMounted(updateTokenStatus)
 }
 
 .dropdown-menu {
-    background: #232323;
-    color: #fff;
-    border: 1px solid #bfa600;
+    background: var(--color-card-background);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
 }
 
 .dropdown-item {
-    color: #fff;
+    color: var(--color-text);
     transition: background 0.18s, color 0.18s;
 }
 
 .dropdown-item:hover,
 .dropdown-item:focus {
-    background: #282828;
-    color: #ffd91c;
+    background: var(--color-background); /* Use a slightly different background for hover */
+    color: var(--color-primary);
 }
 
 .dropdown-item.text-danger {
-    color: #ff4d4f;
+    color: var(--color-danger); /* Updated to use CSS variable */
+}
+
+#theme-toggle-btn {
+    color: var(--color-header-text); 
+    border-color: var(--color-header-text);
+    background-color: transparent; /* Ensure button background is initially transparent */
+    font-size: 1rem; 
+    padding: 0.25rem 0.5rem;
+}
+
+#theme-toggle-btn:hover {
+    color: var(--color-header-background); /* Text color becomes header background */
+    background-color: var(--color-header-text); /* Background becomes header text color */
+    border-color: var(--color-header-text);
 }
 </style>

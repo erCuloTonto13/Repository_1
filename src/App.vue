@@ -45,7 +45,6 @@ router.afterEach(() => {
 <template>
   <div class="body">
     <Header class="fixed-top" />
-    <TopMenu v-if="isLogged" />
     <div class="main-layout">
       <div class="main-content">
         <RouterView class="layout" />

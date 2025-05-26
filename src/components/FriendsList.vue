@@ -90,7 +90,6 @@ onUnmounted(() => {
           </span>
           <span class="friend-info">
             <span class="friend-name">{{ friend.usuario || friend.nombre || friend.name || 'Amigo' }}</span>
-            <span class="friend-meta">Amistad aceptada</span>
           </span>
         </a>
       </li>
@@ -101,7 +100,7 @@ onUnmounted(() => {
 
 <style scoped>
 .friends-list-aside {
-  background: #232323;
+  background: black;
   border-radius: 8px;
   margin-bottom: 1.2rem;
   padding-bottom: 0.5rem;
@@ -123,6 +122,7 @@ onUnmounted(() => {
   padding-left: 1.2rem;
   padding-right: 1.2rem;
   color: #bfa600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .friends-list-title {
@@ -151,7 +151,6 @@ onUnmounted(() => {
   justify-content: flex-start;
   gap: 0.7rem;
   padding: 0.5rem 1.2rem;
-  color: #8E44FF;
   text-decoration: none;
   border-radius: 6px;
   transition: background 0.18s, color 0.18s;
@@ -159,7 +158,7 @@ onUnmounted(() => {
 }
 
 .friend-link:hover {
-  background: #8E44FF;
+  background: #2c2c2c;
   color: #fff;
 }
 
@@ -201,18 +200,11 @@ onUnmounted(() => {
 
 .friend-name {
   font-size: 1.08rem;
-  color: #8E44FF;
+  color: white;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.friend-meta {
-  font-size: 0.85rem;
-  color: #bfa600;
-  opacity: 0.7;
-  margin-top: 0.1em;
 }
 
 .no-friends-msg {

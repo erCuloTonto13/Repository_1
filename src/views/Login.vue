@@ -173,7 +173,7 @@ function onAfterLeave(el) {
 <style scoped>
 .login-bg {
   min-height: 75vh;
-  background: #161515;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -183,7 +183,7 @@ function onAfterLeave(el) {
   background: #222;
   color: white;
   border-radius: 1vw;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 2px 16px rgb(0, 0, 0);
   padding: 3vh 3vw 2vh 3vw;
   min-width: 320px;
   max-width: 90vw;
@@ -226,13 +226,13 @@ function onAfterLeave(el) {
 }
 
 .login-group input:focus {
-  border: 1.5px solid #ffd91c;
+  border: 1.5px solid #fff205;
 }
 
 .login-btn {
   width: 100%;
   padding: 0.8em 0;
-  background: linear-gradient(90deg, #ffd91c 60%, #bfa600 100%);
+  background: #fff205;
   color: #222;
   font-weight: bold;
   font-size: 1.1rem;
@@ -272,13 +272,13 @@ function onAfterLeave(el) {
 
 .login-switch {
   margin-top: 1.5vh;
-  color: #ffd91c;
+  color: #fff205;
   font-size: 1rem;
   text-align: center;
 }
 
 .login-switch a {
-  color: #ffd91c;
+  color: #fff205;
   text-decoration: underline;
   cursor: pointer;
   margin-left: 0.3em;

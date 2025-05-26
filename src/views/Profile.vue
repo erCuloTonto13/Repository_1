@@ -228,14 +228,13 @@ onMounted(async () => {
                 <div class="profile-header d-flex mb-3">
                     <!-- Profile Picture Section -->
                     <div class="profile-avatar me-3">
-                        <img :src="userAvatar" alt="avatar" class="rounded-circle"
-                            style="width: 150px; height: 150px; object-fit: cover;" />
+                        <img :src="userAvatar" alt="avatar" class="rounded-circle profile-img" />
                     </div>
                     <!-- User Info Section -->
                     <div class="profile-info">
                         <div class="d-flex align-items-center mb-2">
                             <h2 class="fw-bold fs-3 mb-0 me-2">{{ userInfo.usuario }}</h2>
-                            <span v-if="userInfo.verificado" class="badge bg-success me-1">✔ Verificado</span>
+                            <span v-if="userInfo.verificado" class="badge bg-success me-1"><i class="bi bi-check"></i> Verificado</span>
                             <span v-if="userInfo.is_admin" class="badge bg-warning text-dark">Administrador</span>
                             <!-- Botón de editar perfil a la derecha de los badges -->
                             <button @click="router.push('/EditProfile')" class="btn edit-profile-btn"
@@ -243,7 +242,7 @@ onMounted(async () => {
                                 <i class="bi bi-pencil"></i>
                             </button>
                         </div>
-                        <div class="d-flex gap-4 mb-2 profile-stats align-items-center" style="position: relative;">
+                        <div class="d-flex gap-4 mb-2 profile-stats align-items-center profile-stats-pos">
                             <div><span class="stat-value">{{ userPosts.length }}</span> <span
                                     class="stat-label">Posts</span></div>
                             <div><span class="stat-value">{{ loadingFriends ? '...' : userFriends.length }}</span> <span
@@ -267,30 +266,22 @@ onMounted(async () => {
                             type="button" role="tab" aria-controls="saveds" aria-selected="false">Saveds</button>
                     </li>
                 </ul>
-                <div class="tab-content" id="profileTabContent"
-                    style="height: 52vh; overflow-y: auto; background: #232323; color: #fff;">
+                <div class="tab-content" id="profileTabContent">
                     <div class="tab-pane fade show active" id="posts" role="tabpanel" aria-labelledby="posts-tab">
                         <div v-if="!loadingPosts && userPosts.length === 0" class="no-posts-message">{{ noPostsMsg }}
                         </div>
                         <div v-if="loadingPosts" class="mt-5 text-center" style="color: #fff;">Cargando...</div>
                         <div class="posts-grid" v-else>
                             <template v-if="userPosts.length > 0">
-                                <div v-for="post in userPosts" :key="post.id" class="post-item"
-                                    style="background: #181818; color: #fff; border: 1.5px solid #060606; flex-direction: column; cursor: pointer; padding: 0;">
-                                    <a :href="`/posts/${post.id}`"
-                                        style="display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; text-decoration: none; color: inherit; padding: 18px 10px 18px 10px; justify-content: flex-start;">
-                                        <div style="width: 100%;">
-                                            <div
-                                                style="font-weight: bold; font-size: 1.45em; margin-bottom: 0.15em; text-align: center;">
-                                                {{ post.titulo }}</div>
-                                            <div
-                                                style="font-size: 1.12em; color: #ffd91c; margin-bottom: 0.7em; text-align: center;">
-                                                {{ post.descripcion }}</div>
+                                <div v-for="post in userPosts" :key="post.id" class="post-item card-style">
+                                    <a :href="`/posts/${post.id}`" class="card-link">
+                                        <div class="card-content">
+                                            <div class="card-title">{{ post.titulo }}</div>
+                                            <div class="card-desc">{{ post.descripcion }}</div>
+                                            <img v-if="post.imagen" :src="'http://localhost:8080/' + post.imagen"
+                                                alt="Imagen" class="card-img"
+                                                @error="event.target.style.display = 'none'" />
                                         </div>
-                                        <div style="flex: 1 1 auto;"></div>
-                                        <img v-if="post.imagen" :src="'http://localhost:8080/' + post.imagen"
-                                            alt="Imagen"
-                                            style="max-width: 95%; max-height: 180px; border-radius: 10px; margin-top: auto; margin-bottom: 1.1em; object-fit: contain; display: block;" />
                                     </a>
                                 </div>
                             </template>
@@ -302,22 +293,15 @@ onMounted(async () => {
                         <div v-if="loadingLikes" class="mt-5 text-center" style="color: #fff;">Cargando...</div>
                         <div class="posts-grid" v-else>
                             <template v-if="userLikes.length > 0">
-                                <div v-for="like in userLikes" :key="like.id" class="post-item"
-                                    style="background: #181818; color: #fff; border: 1.5px solid #ffd91c; flex-direction: column; cursor: pointer; padding: 0;">
-                                    <a :href="`/posts/${like.id}`"
-                                        style="display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; text-decoration: none; color: inherit; padding: 18px 10px 18px 10px; justify-content: flex-start;">
-                                        <div style="width: 100%;">
-                                            <div
-                                                style="font-weight: bold; font-size: 1.45em; margin-bottom: 0.15em; text-align: center;">
-                                                {{ like.titulo }}</div>
-                                            <div
-                                                style="font-size: 1.12em; color: #ffd91c; margin-bottom: 0.7em; text-align: center;">
-                                                {{ like.descripcion }}</div>
+                                <div v-for="like in userLikes" :key="like.id" class="post-item card-style">
+                                    <a :href="`/posts/${like.id}`" class="card-link">
+                                        <div class="card-content">
+                                            <div class="card-title">{{ like.titulo }}</div>
+                                            <div class="card-desc">{{ like.descripcion }}</div>
+                                            <img v-if="like.imagen" :src="'http://localhost:8080/' + like.imagen"
+                                                alt="Imagen" class="card-img"
+                                                @error="event.target.style.display = 'none'" />
                                         </div>
-                                        <div style="flex: 1 1 auto;"></div>
-                                        <img v-if="like.imagen" :src="'http://localhost:8080/' + like.imagen"
-                                            alt="Imagen"
-                                            style="max-width: 95%; max-height: 180px; border-radius: 10px; margin-top: auto; margin-bottom: 1.1em; object-fit: contain; display: block;" />
                                     </a>
                                 </div>
                             </template>
@@ -329,22 +313,15 @@ onMounted(async () => {
                         <div v-if="loadingSaveds" class="mt-5 text-center" style="color: #fff;">Cargando...</div>
                         <div class="posts-grid" v-else>
                             <template v-if="userSaveds.length > 0">
-                                <div v-for="saved in userSaveds" :key="saved.id" class="post-item"
-                                    style="background: #181818; color: #fff; border: 1.5px solid #ffd91c; flex-direction: column; cursor: pointer; padding: 0;">
-                                    <a :href="`/posts/${saved.id}`"
-                                        style="display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; text-decoration: none; color: inherit; padding: 18px 10px 18px 10px; justify-content: flex-start;">
-                                        <div style="width: 100%;">
-                                            <div
-                                                style="font-weight: bold; font-size: 1.45em; margin-bottom: 0.15em; text-align: center;">
-                                                {{ saved.titulo }}</div>
-                                            <div
-                                                style="font-size: 1.12em; color: #ffd91c; margin-bottom: 0.7em; text-align: center;">
-                                                {{ saved.descripcion }}</div>
+                                <div v-for="saved in userSaveds" :key="saved.id" class="post-item card-style">
+                                    <a :href="`/posts/${saved.id}`" class="card-link">
+                                        <div class="card-content">
+                                            <div class="card-title">{{ saved.titulo }}</div>
+                                            <div class="card-desc">{{ saved.descripcion }}</div>
+                                            <img v-if="saved.imagen" :src="'http://localhost:8080/' + saved.imagen"
+                                                alt="Imagen" class="card-img"
+                                                @error="event.target.style.display = 'none'" />
                                         </div>
-                                        <div style="flex: 1 1 auto;"></div>
-                                        <img v-if="saved.imagen" :src="'http://localhost:8080/' + saved.imagen"
-                                            alt="Imagen"
-                                            style="max-width: 95%; max-height: 180px; border-radius: 10px; margin-top: auto; margin-bottom: 1.1em; object-fit: contain; display: block;" />
                                     </a>
                                 </div>
                             </template>
@@ -365,6 +342,9 @@ onMounted(async () => {
     border-radius: 18px;
     padding: 20px;
     align-items: center;
+    /* Fondo negro al centro y difuminado a #F4F4F4 en los bordes */
+    background: rgba(0, 0, 0, 0.774);
+    border: 0.13vw solid #8e44ff;
 }
 
 .profile-avatar img {
@@ -372,7 +352,14 @@ onMounted(async () => {
     height: 150px;
     object-fit: cover;
     border-radius: 50%;
-    border: 2px solid #8E44FF;
+}
+
+.profile-img {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 50%;
+
 }
 
 .profile-info h2 {
@@ -382,7 +369,7 @@ onMounted(async () => {
 }
 
 .edit-profile-btn {
-    background: #8E44FF;
+    background: #00fff79a;
     color: #fff;
     border: none;
     border-radius: 6px;
@@ -397,82 +384,127 @@ onMounted(async () => {
 
 .profile-stats .stat-value {
     font-weight: 600;
-    color: #8E44FF;
+    color: #7CFF01;
 }
 
+.profile-stats-pos {
+    position: relative;
+}
 
 .nav-link {
     border-bottom: none;
+    color: black;
     font-weight: 600;
-    
+
+}
+.nav-link:hover {
+    color: #8E44FF;
+    border-bottom: 2px solid #8E44FF;
 }
 
 .nav-link.active {
-    
+
     color: #8E44FF;
     border-bottom: 2px solid #8E44FF;
 }
 
 .tab-content {
-
+    height: 52vh;
+    background-color: #e2e2e2 !important;
+    overflow-y: auto;
+    background: #fcfcfc;
+    color: #232323;
     border-radius: 12px;
-    
+    border: 2px solid #8E44FF33;
+    box-shadow: 0 2px 12px #0001;
 }
 
 .posts-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.2vh;
     margin-top: 1.5em;
 }
 
 .post-item {
-
-    border-radius: 10px;
+    border-radius: 14px;
+    border: 2.5px solid;
+    box-shadow: 0 2px 12px #0002;
     padding: 0;
-    transition: box-shadow 0.2s;
+    transition: box-shadow 0.2s, border-color 0.2s, transform 0.18s;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    min-height: 180px;
+    position: relative;
 }
 
 .post-item:hover {
-    box-shadow: 0 2px 12px #0002;
+    box-shadow: 0 8px 32px #8E44FF33, 0 2px 12px #00fff733;
     border-color: #8E44FF;
+    transform: translateY(-2px) scale(1.012);
 }
 
-.post-link {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+.card-style {
+    background: #fcfcfc;
+    border: none;
+    border-radius: 14px 14px 24px 24px;
+    box-shadow: 0 2px 12px #0002;
+    transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+    overflow: hidden;
+    padding-bottom: 0.5vh;
+    margin-bottom: 0.5vh;
+    max-width: 320px;
+    min-width: 180px;
     width: 100%;
-    height: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.card-style:hover {
+    box-shadow: 0 8px 32px #8E44FF33, 0 2px 12px #00fff733;
+    transform: translateY(-0.5vh) scale(1.01);
+}
+
+.card-link {
     text-decoration: none;
     color: inherit;
-    padding: 18px 10px 18px 10px;
-    justify-content: flex-start;
+    display: block;
 }
 
-.post-title {
-    font-weight: bold;
-    font-size: 1.45em;
-    margin-bottom: 0.15em;
+.card-content {
+    padding: 2vh 2vw;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.card-title {
+    font-weight: 600;
+    width: 100%;
     text-align: center;
-
+    padding-bottom: 0.7vh;
+    color: #fff;
+    font-size: 1.3em;
+    letter-spacing: 0.01em;
 }
 
-.post-desc {
-    font-size: 1.12em;
+.card-desc {
+    font-size: 1.08em;
     color: #8E44FF;
     margin-bottom: 0.7em;
     text-align: center;
+    font-weight: 500;
 }
 
-.post-img {
-    max-width: 95%;
-    max-height: 180px;
-    border-radius: 10px;
-    margin-top: auto;
-    margin-bottom: 1.1em;
+.card-img {
+    width: 100%;
+    max-height: 30vh;
     object-fit: contain;
-    display: block;
+    border-radius: 0.7vw;
+    margin-bottom: 1vh;
+    margin-top: 1vh;
+    background: #232323;
 }
 
 .no-posts-message {
@@ -481,15 +513,13 @@ onMounted(async () => {
     margin-top: 2em;
 }
 
-
 .badge.bg-success {
-    background: #8E44FF;
-    color: #fff;
+    background: #39ff14 !important;
+    color: #181818;
 }
 
 .badge.bg-warning {
-    background: #8E44FF;
-    color: #fff;
+    background: #ffd600 !important;
+    color: #181818;
 }
-
 </style>

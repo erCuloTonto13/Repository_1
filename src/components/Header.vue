@@ -50,6 +50,21 @@ onMounted(updateTokenStatus)
                 <img :src="logoSrc" width="32" alt="Logo" />
                 <span class="fw-semibold fs-4">POMSE</span>
             </a>
+            <!-- TopMenu Links (centrados, visibles solo si hasToken) -->
+            <div v-if="hasToken" class="menu-links-header">
+                <RouterLink class="menu-link" to="/">
+                    <span class="icon">🏠</span>
+                    <span class="text">Inicio</span>
+                </RouterLink>
+                <RouterLink class="menu-link" to="/documentos">
+                    <span class="icon">📄</span>
+                    <span class="text">Amigos</span>
+                </RouterLink>
+                <RouterLink class="menu-link" to="/configuracion">
+                    <span class="icon">⚙️</span>
+                    <span class="text">Mensajes</span>
+                </RouterLink>
+            </div>
             <!-- Parte Derecha -->
             <div class="collapse navbar-collapse justify-content-end">
                 <ul class="navbar-nav mb-md-0">
@@ -90,6 +105,7 @@ onMounted(updateTokenStatus)
 .navbar {
     background: black;
     height: 7vh;
+    padding-top: 2vh;
     min-height: 48px;
     position: fixed;
     top: 0;
@@ -137,7 +153,7 @@ onMounted(updateTokenStatus)
 .dropdown-menu {
     background: #232323;
     color: #fff;
-    border: 1px solid #00FFC6;
+    border: 1px solid #8E44FF;
 }
 
 .dropdown-item {
@@ -161,5 +177,68 @@ onMounted(updateTokenStatus)
     padding-bottom: 2px;
     line-height: 1.1;
     box-shadow: 0 2px 8px #00ffc666;
+}
+
+.menu-links-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 2vw;
+    width: 100%;
+    margin-left: 2vw;
+}
+
+.menu-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    color: #f4f4f4;
+    font-weight: 600;
+    font-size: 1.08rem;
+    text-decoration: none;
+    padding: 0.1vw 1.2em;
+    border-radius: 0.7em;
+    transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+    position: relative;
+}
+
+.menu-link .icon {
+    font-size: 1.3em;
+    color: #8E44FF;
+    filter: drop-shadow(0 0 2px #0008);
+    transition: color 0.18s;
+}
+
+.menu-link .text {
+    color: #f4f4f4;
+    font-weight: 600;
+    font-size: 1.05rem;
+    transition: color 0.18s;
+}
+
+.menu-link.router-link-exact-active,
+.menu-link:hover {
+    background: rgba(142, 68, 255, 0.32);
+    color: #fff;
+    box-shadow: 0 2px 8px #8E44FF22;
+}
+
+.menu-link.router-link-exact-active .icon,
+.menu-link:hover .icon {
+    color: #fff;
+}
+
+@media (max-width: 700px) {
+    .menu-links-header {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100vw;
+        padding: 0.5em 0 0.5em 0;
+        box-shadow: none;
+        border-radius: 0;
+        margin-left: 0;
+    }
 }
 </style>

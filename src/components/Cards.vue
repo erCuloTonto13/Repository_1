@@ -18,6 +18,7 @@ let pageSize = 10
 let loadingMore = ref(false)
 let allLoaded = ref(false)
 let loadedIds = ref(new Set())
+const scrollComponent = ref(null)
 
 function getImageUrl(path) {
     if (!path) return null
@@ -66,28 +67,24 @@ async function fetchPage(pageNum) {
     }
 }
 
-let scroller = ref(null)
-
 onMounted(async () => {
     await fetchPage(page.value)
     useInfiniteScroll(
+        scrollComponent, // The ref to the scrollable element
         async () => {
             if (!loadingMore.value && !allLoaded.value) {
                 page.value++
                 await fetchPage(page.value)
             }
         },
-        { distance: 200 }
+        { distance: 200 } // Keep existing options, or adjust if needed
     )
-})
-onUnmounted(() => {
-    window.removeEventListener('scroll', handleScroll)
 })
 </script>
 
 
 <template>
-    <div class="layout-outer">
+    <div class="layout-outer" ref="scrollComponent">
         <div class="layout">
             <div v-if="error">Error: {{ error.message }}</div>
             <div v-else-if="data && data.length">

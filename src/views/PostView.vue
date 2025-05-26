@@ -2,18 +2,23 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
+import { useInfiniteScroll } from '@vueuse/core'
 
 
 axios.defaults.baseURL = 'http://localhost:8080/api/'
 
 const route = useRoute()
-const router = useRouter()
 const post = ref(null)
 const loading = ref(true)
 const error = ref(null)
 const comments = ref([])
 const commentsLoading = ref(true)
 const commentsError = ref(null)
+const commentUsers = ref({}); // { [userId]: userData }
+const commentsPage = ref(1)
+const commentsPageSize = 5
+const commentsAllLoaded = ref(false)
+const commentsContainer = ref(null)
 
 onMounted(async () => {
     const id = route.params.id
@@ -26,19 +31,57 @@ onMounted(async () => {
         loading.value = false
     }
 
-    await fetchComments()
+    await fetchComments(commentsPage.value)
+    useInfiniteScroll(
+        commentsContainer,
+        async () => {
+            if (!commentsLoading.value && !commentsAllLoaded.value) {
+                commentsPage.value++
+                await fetchComments(commentsPage.value)
+            }
+        },
+        { distance: 200 }
+    )
 })
 
-async function fetchComments() {
-    commentsLoading.value = true
-    commentsError.value = null
+async function fetchUser(userId) {
+    if (!userId || commentUsers.value[userId]) return;
     try {
-        const res = await axios.get(`/posts/${route.params.id}/comments`)
-        comments.value = Array.isArray(res.data) ? res.data : []
+        const res = await axios.get(`/users/${userId}`);
+        commentUsers.value[userId] = res.data;
     } catch (e) {
-        commentsError.value = 'No se pudieron cargar los comentarios.'
+        commentUsers.value[userId] = { usuario: 'Anónimo' };
+    }
+}
+
+async function fetchComments(page = 1) {
+    // Elimina el return si page === 1 para permitir recarga inicial
+    if (commentsLoading.value && page !== 1) return;
+    if (commentsAllLoaded.value && page !== 1) return;
+    commentsLoading.value = true;
+    commentsError.value = null;
+    try {
+        const res = await axios.get(`/commentsOfPost/${route.params.id}?page=${page}&limit=${commentsPageSize}`);
+        const paginator = res.data.comments;
+        const newComments = Array.isArray(paginator.data) ? paginator.data : [];
+        if (page === 1) {
+            comments.value = newComments;
+            commentsAllLoaded.value = false;
+        } else {
+            comments.value = [...comments.value, ...newComments];
+        }
+        if (!paginator.next_page_url || newComments.length < commentsPageSize) {
+            commentsAllLoaded.value = true;
+        }
+        for (const comment of newComments) {
+            if (comment.usuario_id) {
+                await fetchUser(comment.usuario_id);
+            }
+        }
+    } catch (e) {
+        commentsError.value = 'No se pudieron cargar los comentarios.';
     } finally {
-        commentsLoading.value = false
+        commentsLoading.value = false;
     }
 }
 
@@ -71,16 +114,27 @@ function formatDateDMY(dateStr) {
                     </span>
                 </div>
             </div>
-            <div class="comments-section">
-                <h3 class="comments-title">Comentarios</h3>
-                <div v-if="commentsLoading" class="loading">Cargando comentarios...</div>
+            <div class="comments-section" ref="commentsContainer">
+                <div class="comments-header">
+                    <h3 class="comments-title">Comentarios</h3>
+                    <button class="create-comment-btn">Crear comentario</button>
+                </div>
+                <div v-if="commentsLoading && comments.length === 0" class="loading">Cargando comentarios...</div>
                 <div v-else-if="commentsError" class="error">{{ commentsError }}</div>
                 <div v-else>
                     <div v-if="comments.length === 0" class="no-comments">No hay comentarios aún.</div>
                     <div v-for="comment in comments" :key="comment.id" class="comment-card">
-                        <div class="comment-user">{{ comment.usuario || 'Anónimo' }}</div>
+                        <div class="comment-user">
+                            {{ commentUsers[comment.usuario_id]?.usuario || comment.usuario || 'Anónimo' }}
+                        </div>
                         <div class="comment-body">{{ comment.texto }}</div>
+                        <img v-if="comment.imagen && comment.imagen !== ''"
+                            :src="comment.imagen.startsWith('http') ? comment.imagen : 'http://localhost:8080/' + comment.imagen"
+                            class="comment-img" />
                         <div class="comment-date">{{ formatDateDMY(comment.created_at) }}</div>
+                    </div>
+                    <div v-if="commentsLoading && comments.length > 0" class="loading">Cargando más...</div>
+                    <div v-if="commentsAllLoaded && comments.length > 0" class="end-message">No hay más comentarios.
                     </div>
                 </div>
             </div>
@@ -167,6 +221,32 @@ function formatDateDMY(dateStr) {
     padding: 1.2em 1.5em 1.5em 1.5em;
 }
 
+.comments-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1em;
+}
+
+.create-comment-btn {
+    background: #8E44FF;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.5em 1.4em;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px #8E44FF33;
+    transition: background 0.2s;
+    margin-right: 1em;
+}
+
+.create-comment-btn:hover {
+    background: #6c2bd7;
+}
+
 .comments-title {
     color: #8E44FF;
     font-size: 1.25em;
@@ -204,9 +284,43 @@ function formatDateDMY(dateStr) {
     margin: 0.2em 0 0.1em 0;
 }
 
+.comment-img {
+    margin: 0.5em 0 0.5em 0;
+    max-width: 320px;
+    max-height: 220px;
+    border-radius: 8px;
+    box-shadow: 0 1px 6px #8E44FF44;
+    align-self: flex-start;
+    background: #181818;
+    object-fit: contain;
+}
+
 .comment-date {
     color: #8E44FF;
     font-size: 0.95em;
     align-self: flex-end;
+}
+
+.comment-img-wrapper {
+    margin: 0.5em 0 0.7em 0;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.comment-img {
+    max-width: 220px;
+    max-height: 180px;
+    border-radius: 8px;
+    box-shadow: 0 1px 6px #8E44FF44;
+    background: #232323;
+    object-fit: cover;
+}
+
+.more-comments-loading,
+.no-more-comments {
+    text-align: center;
+    color: #aaa;
+    margin: 1.5em 0;
+    font-size: 1em;
 }
 </style>

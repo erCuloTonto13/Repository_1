@@ -1,5 +1,6 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useInfiniteScroll } from '@vueuse/core'
 import axios from 'axios'
 
 import commentIcon from '/public/icons/comment.svg'
@@ -8,10 +9,15 @@ import saveIcon from '/public/icons/save.svg'
 
 axios.defaults.baseURL = 'http://localhost:8080/api/'
 
-const data = ref(null)
-const error = ref(null)
-const commentsCount = ref({})
-const likesCount = ref({})
+let data = ref([])
+let error = ref(null)
+let commentsCount = ref({})
+let likesCount = ref({})
+let page = ref(1)
+let pageSize = 10
+let loadingMore = ref(false)
+let allLoaded = ref(false)
+let loadedIds = ref(new Set())
 
 function getImageUrl(path) {
     if (!path) return null
@@ -21,7 +27,7 @@ function getImageUrl(path) {
 // Función para obtener el número de comentarios de un post
 async function fetchCommentsCount(postId) {
     try {
-        const response = await axios.get(`commentsOfPost/${postId}`)
+        let response = await axios.get(`commentsOfPost/${postId}`)
 
         commentsCount.value[postId] = Array.isArray(response.data.comments) ? response.data.comments.length : 0
     } catch (e) {
@@ -32,78 +38,113 @@ async function fetchCommentsCount(postId) {
 // Función para obtener el número de likes de un post
 async function fetchLikesCount(postId) {
     try {
-        const response = await axios.get(`likesOfPost/${postId}`)
+        let response = await axios.get(`likesOfPost/${postId}`)
         likesCount.value[postId] = Array.isArray(response.data.likes) ? response.data.likes.length : 0
     } catch (e) {
         likesCount.value[postId] = 0
     }
 }
 
-onMounted(async () => {
+async function fetchPage(pageNum) {
     try {
-        const response = await axios.get('posts')
-        data.value = response.data
-        // Llamar a la función para cada post
-        if (Array.isArray(data.value)) {
-            for (const post of data.value) {
-                fetchCommentsCount(post.id)
-                fetchLikesCount(post.id)
-            }
+        loadingMore.value = true
+        let response = await axios.get(`posts?page=${pageNum}&limit=${pageSize}`)
+        let posts = Array.isArray(response.data) ? response.data : response.data.posts || []
+        // Filtrar posts ya cargados
+        let newPosts = posts.filter(post => !loadedIds.value.has(post.id))
+        if (newPosts.length < pageSize) allLoaded.value = true
+        for (let post of newPosts) {
+            fetchCommentsCount(post.id)
+            fetchLikesCount(post.id)
+            loadedIds.value.add(post.id)
         }
+        data.value = [...data.value, ...newPosts]
     } catch (err) {
         error.value = err
+    } finally {
+        loadingMore.value = false
     }
+}
+
+let scroller = ref(null)
+
+onMounted(async () => {
+    await fetchPage(page.value)
+    useInfiniteScroll(
+        async () => {
+            if (!loadingMore.value && !allLoaded.value) {
+                page.value++
+                await fetchPage(page.value)
+            }
+        },
+        { distance: 200 }
+    )
+})
+onUnmounted(() => {
+    window.removeEventListener('scroll', handleScroll)
 })
 </script>
 
 
 <template>
-    <div class="layout">
-        <div v-if="error">Error: {{ error.message }}</div>
-        <div v-else-if="data">
-            <div class="cards-container">
-                <div v-for="(item, id) in data" :key="item.id || id" class="card" :class="{ 'has-image': item.imagen }">
-                    <a class="card-link" :href="`/posts/${item.id}`" tabindex="0" target="_self"
-                        style="text-decoration: none; color: inherit; display: block;">
-                        <div class="card-content">
-                            <p class="h5 mb-1 card-title">{{ item.titulo }}</p>
-                            <p class="h6 text-muted pt-2 mb-3">{{ item.descripcion }}</p>
-                            <img v-if="item.imagen" :src="getImageUrl(item.imagen)" alt="Imagen" class="card-img"
-                                @error="event.target.style.display = 'none'" />
+    <div class="layout-outer">
+        <div class="layout">
+            <div v-if="error">Error: {{ error.message }}</div>
+            <div v-else-if="data && data.length">
+                <div class="cards-container">
+                    <div v-for="(item, id) in data" :key="item.id || id" class="card"
+                        :class="{ 'has-image': item.imagen }">
+                        <a class="card-link" :href="`/posts/${item.id}`" tabindex="0" target="_self"
+                            style="text-decoration: none; color: inherit; display: block;">
+                            <div class="card-content">
+                                <p class="h5 mb-1 card-title">{{ item.titulo }}</p>
+                                <p class="h6 text-muted pt-2 mb-3">{{ item.descripcion }}</p>
+                                <img v-if="item.imagen" :src="getImageUrl(item.imagen)" alt="Imagen" class="card-img"
+                                    @error="event.target.style.display = 'none'" />
+                            </div>
+                        </a>
+                        <div class="iconos">
+                            <span class="icon-action" title="Comentar">
+                                <a :href="`/posts/${item.id}`">
+                                    <img :src="commentIcon" alt="comment image" />
+                                </a>
+                                <span class="icon-count">{{ commentsCount[item.id] ?? '' }}</span>
+                            </span>
+                            <span class="icon-action" title="Me gusta">
+                                <img :src="likeIcon" alt="Like image" />
+                                <span class="icon-count">{{ likesCount[item.id] ?? '' }}</span>
+                            </span>
+                            <span class="icon-action" title="Guardar">
+                                <img :src="saveIcon" alt="Save image" />
+                            </span>
                         </div>
-                    </a>
-                    <div class="iconos">
-                        <span class="icon-action" title="Comentar">
-                            <a :href="`/posts/${item.id}`">
-                                <img :src="commentIcon" alt="comment image" />
-                            </a>
-                            <span class="icon-count">{{ commentsCount[item.id] ?? '' }}</span>
-                        </span>
-                        <span class="icon-action" title="Me gusta">
-                            <img :src="likeIcon" alt="Like image" />
-                            <span class="icon-count">{{ likesCount[item.id] ?? '' }}</span>
-                        </span>
-                        <span class="icon-action" title="Guardar">
-                            <img :src="saveIcon" alt="Save image" />
-                        </span>
                     </div>
                 </div>
+                <div v-if="loadingMore" class="loading">Cargando más...</div>
+                <div v-if="allLoaded && data.length > 0" class="end-message">No hay más posts.</div>
             </div>
+            <div v-else>Cargando...</div>
         </div>
-        <div v-else>Cargando...</div>
     </div>
 </template>
 
 
 <style scoped>
+.layout-outer {
+    width: 100vw;
+    min-height: 100vh;
+    overflow-y: auto;
+    background: transparent;
+}
+
 .layout {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    min-height: calc(100vh - 9vh);
+    min-height: 0;
     width: 100vw;
-    overflow: auto;
+    overflow: visible;
     padding-top: 3vh;
 }
 
@@ -119,7 +160,7 @@ onMounted(async () => {
 
     border: none;
     padding-bottom: 0.5vh;
-    border-bottom: 0.3vh solid #ffd600;
+    border-bottom: 0.5vh solid #8E44FF22;
     background-color: transparent;
     width: 60vw;
     min-width: 260px;
@@ -245,5 +286,19 @@ onMounted(async () => {
 
 .card-action:hover {
     color: #121212;
+}
+
+.loading {
+    color: #8E44FF;
+    text-align: center;
+    font-size: 1.2em;
+    margin: 2em 0 1em 0;
+}
+
+.end-message {
+    color: #aaa;
+    text-align: center;
+    font-size: 1.1em;
+    margin: 2em 0 1em 0;
 }
 </style>

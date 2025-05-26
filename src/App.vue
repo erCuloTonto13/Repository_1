@@ -58,7 +58,7 @@ router.afterEach(() => {
   background: #F4F4F4;
   color: white;
   min-height: 100vh;
-  overflow: hidden;
+  overflow-y: auto;
   padding-top: 13vh;
   /* deja espacio para el header fijo */
 }

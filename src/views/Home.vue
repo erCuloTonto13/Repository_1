@@ -33,6 +33,8 @@ window.addEventListener('storage', () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 #friends {
@@ -66,7 +68,7 @@ window.addEventListener('storage', () => {
   font-weight: bold;
   line-height: 1;
   display: flex;
-  align-items: center;
+  align-items:center;
   justify-content: center;
 }
 </style>

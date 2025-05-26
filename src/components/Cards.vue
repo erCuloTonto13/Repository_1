@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useInfiniteScroll } from '@vueuse/core'
 import axios from 'axios'
 
@@ -25,22 +25,23 @@ function getImageUrl(path) {
     return 'http://localhost:8080/' + path;
 }
 
-// Función para obtener el número de comentarios de un post
 async function fetchCommentsCount(postId) {
     try {
         let response = await axios.get(`commentsOfPost/${postId}`)
-
-        commentsCount.value[postId] = Array.isArray(response.data.comments) ? response.data.comments.length : 0
+        commentsCount.value[postId] = Array.isArray(response.data.comments)
+            ? response.data.comments.length
+            : 0
     } catch (e) {
         commentsCount.value[postId] = 0
     }
 }
 
-// Función para obtener el número de likes de un post
 async function fetchLikesCount(postId) {
     try {
         let response = await axios.get(`likesOfPost/${postId}`)
-        likesCount.value[postId] = Array.isArray(response.data.likes) ? response.data.likes.length : 0
+        likesCount.value[postId] = Array.isArray(response.data.likes)
+            ? response.data.likes.length
+            : 0
     } catch (e) {
         likesCount.value[postId] = 0
     }
@@ -50,15 +51,20 @@ async function fetchPage(pageNum) {
     try {
         loadingMore.value = true
         let response = await axios.get(`posts?page=${pageNum}&limit=${pageSize}`)
-        let posts = Array.isArray(response.data) ? response.data : response.data.posts || []
-        // Filtrar posts ya cargados
+        let posts = response.data.data || []
         let newPosts = posts.filter(post => !loadedIds.value.has(post.id))
-        if (newPosts.length < pageSize) allLoaded.value = true
+
+        // Detectar si es la última página
+        if (!response.data.next_page_url || newPosts.length === 0) {
+            allLoaded.value = true
+        }
+
         for (let post of newPosts) {
             fetchCommentsCount(post.id)
             fetchLikesCount(post.id)
             loadedIds.value.add(post.id)
         }
+
         data.value = [...data.value, ...newPosts]
     } catch (err) {
         error.value = err
@@ -67,20 +73,28 @@ async function fetchPage(pageNum) {
     }
 }
 
+// Inicial carga
 onMounted(async () => {
     await fetchPage(page.value)
+})
+
+// Esperar a que el scrollComponent exista
+watch(scrollComponent, (el) => {
+    if (!el) return
+
     useInfiniteScroll(
-        scrollComponent, // The ref to the scrollable element
+        scrollComponent,
         async () => {
             if (!loadingMore.value && !allLoaded.value) {
                 page.value++
                 await fetchPage(page.value)
             }
         },
-        { distance: 200 } // Keep existing options, or adjust if needed
+        { distance: 200 }
     )
 })
 </script>
+
 
 
 <template>
@@ -129,7 +143,7 @@ onMounted(async () => {
 <style scoped>
 .layout-outer {
     width: 100vw;
-    min-height: 100vh;
+    min-height: 90vh;
     overflow-y: auto;
     background: transparent;
 }
@@ -141,7 +155,7 @@ onMounted(async () => {
     justify-content: flex-start;
     min-height: 0;
     width: 100vw;
-    overflow: visible;
+    overflow: hidden;
     padding-top: 3vh;
 }
 

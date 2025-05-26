@@ -20,6 +20,22 @@ const commentsPageSize = 5
 const commentsAllLoaded = ref(false)
 const commentsContainer = ref(null)
 
+const showCommentForm = ref(false)
+const newCommentText = ref('')
+const newCommentImage = ref(null)
+const newCommentImageUrl = ref('')
+const newCommentLoading = ref(false)
+const newCommentError = ref('')
+
+const isLogged = ref(!!sessionStorage.getItem('token'))
+
+window.addEventListener('storage', () => {
+    isLogged.value = !!sessionStorage.getItem('token')
+})
+window.addEventListener('token-changed', () => {
+    isLogged.value = !!sessionStorage.getItem('token')
+})
+
 onMounted(async () => {
     const id = route.params.id
     try {
@@ -94,6 +110,57 @@ function formatDateDMY(dateStr) {
     const year = d.getFullYear();
     return `${day}-${month}-${year}`;
 }
+
+function openCommentForm() {
+    showCommentForm.value = true
+    newCommentText.value = ''
+    newCommentImage.value = null
+    newCommentImageUrl.value = ''
+    newCommentError.value = ''
+}
+function closeCommentForm() {
+    showCommentForm.value = false
+    newCommentText.value = ''
+    newCommentImage.value = null
+    newCommentImageUrl.value = ''
+    newCommentError.value = ''
+}
+function handleFileChange(e) {
+    const file = e.target.files[0]
+    newCommentImage.value = file
+    if (file) {
+        newCommentImageUrl.value = URL.createObjectURL(file)
+    } else {
+        newCommentImageUrl.value = ''
+    }
+}
+
+async function submitComment() {
+    newCommentError.value = ''
+    if (!newCommentText.value.trim()) {
+        newCommentError.value = 'La descripción es obligatoria.'
+        return
+    }
+    newCommentLoading.value = true
+    try {
+        const formData = new FormData()
+        formData.append('texto', newCommentText.value)
+        if (newCommentImage.value) {
+            formData.append('imagen', newCommentImage.value)
+        }
+        formData.append('post_id', post.value.id)
+        // Si tienes auth, añade el token
+        const token = sessionStorage.getItem('token')
+        const headers = token ? { Authorization: `Bearer ${token}` } : {}
+        await axios.post('/comments', formData, { headers })
+        closeCommentForm()
+        window.location.reload()
+    } catch (e) {
+        newCommentError.value = 'No se pudo crear el comentario.'
+    } finally {
+        newCommentLoading.value = false
+    }
+}
 </script>
 
 <template>
@@ -117,7 +184,7 @@ function formatDateDMY(dateStr) {
             <div class="comments-section" ref="commentsContainer">
                 <div class="comments-header">
                     <h3 class="comments-title">Comentarios</h3>
-                    <button class="create-comment-btn">Crear comentario</button>
+                    <button v-if="isLogged" class="create-comment-btn" @click="openCommentForm">Crear comentario</button>
                 </div>
                 <div v-if="commentsLoading && comments.length === 0" class="loading">Cargando comentarios...</div>
                 <div v-else-if="commentsError" class="error">{{ commentsError }}</div>
@@ -136,6 +203,30 @@ function formatDateDMY(dateStr) {
                     <div v-if="commentsLoading && comments.length > 0" class="loading">Cargando más...</div>
                     <div v-if="commentsAllLoaded && comments.length > 0" class="end-message">No hay más comentarios.
                     </div>
+                </div>
+                <!-- Modal Bootstrap custom -->
+                <div v-if="showCommentForm && isLogged" class="modal fade show comment-form-modal" tabindex="-1" style="display: flex; background: #000a;" aria-modal="true" role="dialog" @mousedown.self="closeCommentForm">
+                  <div class="modal-dialog modal-dialog-centered" style="max-width: 420px; min-width: 320px;">
+                    <div class="modal-content comment-form" style="background: #232323; border-radius: 12px; box-shadow: 0 2px 16px #8E44FF55;">
+                      <div class="modal-body" style="padding: 1.5em 1.5em 1em 1.5em;">
+                        <textarea v-model="newCommentText" class="comment-input" placeholder="Escribe tu comentario..." rows="3" maxlength="500"></textarea>
+                        <div class="comment-form-actions">
+                          <label class="file-label">
+                            <input type="file" accept="image/*" @change="handleFileChange" style="display:none;" />
+                            <span class="file-btn">📎 Imagen</span>
+                          </label>
+                          <span v-if="newCommentImageUrl" class="preview-img">
+                            <img :src="newCommentImageUrl" alt="preview" />
+                          </span>
+                          <button class="cancel-btn" type="button" @click="closeCommentForm">Cancelar</button>
+                          <button class="send-btn" :disabled="newCommentLoading" @click="submitComment">
+                            {{ newCommentLoading ? 'Enviando...' : 'Enviar' }}
+                          </button>
+                        </div>
+                        <div v-if="newCommentError" class="comment-error">{{ newCommentError }}</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
             </div>
         </div>
@@ -322,5 +413,159 @@ function formatDateDMY(dateStr) {
     color: #aaa;
     margin: 1.5em 0;
     font-size: 1em;
+}
+
+.comment-form {
+    background: #232323;
+    border-radius: 12px;
+    box-shadow: 0 2px 16px #8E44FF55;
+    padding: 1.5em 1.5em 1em 1.5em;
+    min-width: 320px;
+    max-width: 95vw;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.7em;
+}
+
+.comment-form-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #000a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+}
+
+.form-title {
+    color: #8E44FF;
+    font-size: 1.5em;
+    font-weight: 700;
+    margin-bottom: 1em;
+}
+
+.comment-input {
+    width: 100%;
+    min-width: 220px;
+    max-width: 420px;
+    min-height: 60px;
+    max-height: 120px;
+    border-radius: 8px;
+    border: 1.5px solid #8E44FF;
+    background: #181818;
+    color: #fff;
+    font-size: 1.08em;
+    padding: 0.7em 1em;
+    resize: vertical;
+    margin-bottom: 0.5em;
+}
+
+.comment-form-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.7em;
+    width: 100%;
+}
+
+.file-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.file-btn {
+    background: #fff205;
+    color: #232323;
+    border-radius: 6px;
+    padding: 0.2em 0.7em;
+    font-size: 0.98em;
+    font-weight: 600;
+    margin-right: 0.5em;
+    cursor: pointer;
+    border: none;
+    transition: background 0.18s;
+}
+
+.file-btn:hover {
+    background: #ffe066;
+}
+
+.preview-img img {
+    max-width: 48px;
+    max-height: 48px;
+    border-radius: 6px;
+    margin-left: 0.3em;
+    box-shadow: 0 1px 6px #8E44FF44;
+}
+
+.send-btn {
+    background: #8E44FF;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.3em 1.1em;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px #8E44FF33;
+    transition: background 0.2s;
+}
+
+.send-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.send-btn:hover {
+    background: #6c2bd7;
+}
+
+.cancel-btn {
+    background: #232323;
+    color: #fff;
+    border: 1.5px solid #8E44FF;
+    border-radius: 8px;
+    padding: 0.3em 1.1em;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 0.5em;
+    transition: background 0.2s, color 0.2s;
+}
+
+.cancel-btn:hover {
+    background: #8E44FF;
+    color: #fff205;
+}
+
+.comment-error {
+    color: #ff4d4f;
+    background: #2b1a1a;
+    border-radius: 0.5em;
+    padding: 0.4em 1em;
+    margin-top: 0.5em;
+    width: 100%;
+    text-align: center;
+    font-size: 1rem;
+}
+
+.loader {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid #8E44FF;
+    border-radius: 50%;
+    width: 1em;
+    height: 1em;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+    margin-right: 0.5em;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 </style>

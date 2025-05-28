@@ -13,12 +13,28 @@ let data = ref([])
 let error = ref(null)
 let commentsCount = ref({})
 let likesCount = ref({})
+let savedsCount = ref({})
 let page = ref(1)
 let pageSize = 10
 let loadingMore = ref(false)
 let allLoaded = ref(false)
 let loadedIds = ref(new Set())
+let likedPosts = ref(new Set()) // Guarda los postId que el usuario ha dado like
+let savedPosts = ref(new Set()) // Guarda los postId que el usuario ha guardado
 const scrollComponent = ref(null)
+
+// ALERTA BOOTSTRAP
+const alertMessage = ref('')
+const alertType = ref('danger')
+const showAlert = ref(false)
+function showBootstrapAlert(message, type = 'danger') {
+    alertMessage.value = message
+    alertType.value = type
+    showAlert.value = true
+    setTimeout(() => {
+        showAlert.value = false
+    }, 5000)
+}
 
 function getImageUrl(path) {
     if (!path) return null
@@ -27,10 +43,10 @@ function getImageUrl(path) {
 
 async function fetchCommentsCount(postId) {
     try {
-        let response = await axios.get(`commentsOfPost/${postId}`)
-        commentsCount.value[postId] = Array.isArray(response.data.comments)
-            ? response.data.comments.length
-            : 0
+        let response = await axios.get(`commentsOfPost/${postId}?limit=1`)
+        commentsCount.value[postId] = response.data.comments && typeof response.data.comments.total === 'number'
+            ? response.data.comments.total
+            : (Array.isArray(response.data.comments.data) ? response.data.comments.data.length : 0)
     } catch (e) {
         commentsCount.value[postId] = 0
     }
@@ -38,12 +54,181 @@ async function fetchCommentsCount(postId) {
 
 async function fetchLikesCount(postId) {
     try {
-        let response = await axios.get(`likesOfPost/${postId}`)
+        const token = sessionStorage.getItem('token')
+        let headers = {}
+        if (token) {
+            headers = {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json'
+            }
+        }
+        let response = await axios.get(`likesOfPost/${postId}`, { headers })
         likesCount.value[postId] = Array.isArray(response.data.likes)
             ? response.data.likes.length
             : 0
+        // Si la API devuelve los likes del usuario, marcar el post como likeado
+        if (token && response.data.likes && Array.isArray(response.data.likes)) {
+            // Buscar si el usuario actual ha dado like
+            const user = sessionStorage.getItem('user')
+            let userId = null
+            if (user) {
+                try {
+                    userId = JSON.parse(user).id
+                } catch { }
+            }
+            if (userId) {
+                if (response.data.likes.some(like => like.usuario_id === userId)) {
+                    likedPosts.value.add(postId)
+                } else {
+                    likedPosts.value.delete(postId)
+                }
+            }
+        }
     } catch (e) {
         likesCount.value[postId] = 0
+    }
+}
+
+async function fetchSavedsCount(postId) {
+    try {
+        const token = sessionStorage.getItem('token')
+        let headers = {}
+        if (token) {
+            headers = {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json'
+            }
+        }
+        let response = await axios.get(`savedsOfPost/${postId}`, { headers })
+        savedsCount.value[postId] = Array.isArray(response.data.saveds)
+            ? response.data.saveds.length
+            : 0
+        // Si la API devuelve los guardados del usuario, marcar el post como guardado
+        if (token && response.data.saveds && Array.isArray(response.data.saveds)) {
+            const user = sessionStorage.getItem('user')
+            let userId = null
+            if (user) {
+                try {
+                    userId = JSON.parse(user).id
+                } catch { }
+            }
+            if (userId) {
+                if (response.data.saveds.some(saved => saved.usuario_id === userId)) {
+                    savedPosts.value.add(postId)
+                } else {
+                    savedPosts.value.delete(postId)
+                }
+            }
+        }
+    } catch (e) {
+        savedsCount.value[postId] = 0
+    }
+}
+
+async function giveLike(postId) {
+    const token = sessionStorage.getItem('token')
+    if (!token) {
+        showBootstrapAlert('Debes iniciar sesión para dar like.', 'warning')
+        return
+    }
+    try {
+        await axios.post('likes', { post_id: postId }, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json'
+            }
+        })
+        likedPosts.value.add(postId)
+        likesCount.value[postId] = (likesCount.value[postId] || 0) + 1
+    } catch (e) {
+        if (e.response && e.response.status === 401) {
+            showBootstrapAlert('Token inválido o expirado. Por favor, inicia sesión de nuevo.', 'danger')
+        } else {
+            showBootstrapAlert('Error al dar like.', 'danger')
+        }
+    }
+}
+
+async function removeLike(postId) {
+    const token = sessionStorage.getItem('token')
+    if (!token) {
+        showBootstrapAlert('Debes iniciar sesión para quitar el like.', 'warning')
+        return
+    }
+    try {
+        await axios.delete('likes', {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json'
+            },
+            data: { post_id: postId }
+        })
+        likedPosts.value.delete(postId)
+        likesCount.value[postId] = Math.max((likesCount.value[postId] || 1) - 1, 0)
+    } catch (e) {
+        if (e.response && e.response.status === 401) {
+            showBootstrapAlert('Token inválido o expirado. Por favor, inicia sesión de nuevo.', 'danger')
+        } else {
+            showBootstrapAlert('Error al quitar el like.', 'danger')
+        }
+    }
+}
+
+async function toggleLike(postId) {
+    // Si ya está likeado, eliminar el like
+    if (likedPosts.value.has(postId)) {
+        await removeLike(postId)
+    } else {
+        // Si no está likeado, dar like
+        await giveLike(postId)
+    }
+}
+
+async function savePost(postId) {
+    const token = sessionStorage.getItem('token')
+    if (!token) {
+        showBootstrapAlert('Debes iniciar sesión para guardar el post.', 'warning')
+        return
+    }
+    try {
+        await axios.post('saveds', { post_id: postId }, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json'
+            }
+        })
+        savedPosts.value.add(postId)
+        savedsCount.value[postId] = (savedsCount.value[postId] || 0) + 1
+    } catch (e) {
+        if (e.response && e.response.status === 401) {
+            showBootstrapAlert('Token inválido o expirado. Por favor, inicia sesión de nuevo.', 'danger')
+        } else {
+            showBootstrapAlert('Error al guardar el post.', 'danger')
+        }
+    }
+}
+
+async function unsavePost(postId) {
+    const token = sessionStorage.getItem('token')
+    if (!token) {
+        showBootstrapAlert('Debes iniciar sesión para quitar el guardado.', 'warning')
+        return
+    }
+    try {
+        await axios.delete(`saveds/${postId}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json'
+            }
+        })
+        savedPosts.value.delete(postId)
+        savedsCount.value[postId] = Math.max((savedsCount.value[postId] || 1) - 1, 0)
+    } catch (e) {
+        if (e.response && e.response.status === 401) {
+            showBootstrapAlert('Token inválido o expirado. Por favor, inicia sesión de nuevo.', 'danger')
+        } else {
+            showBootstrapAlert('Error al quitar el guardado.', 'danger')
+        }
     }
 }
 
@@ -62,6 +247,7 @@ async function fetchPage(pageNum) {
         for (let post of newPosts) {
             fetchCommentsCount(post.id)
             fetchLikesCount(post.id)
+            fetchSavedsCount(post.id)
             loadedIds.value.add(post.id)
         }
 
@@ -100,6 +286,11 @@ watch(scrollComponent, (el) => {
 <template>
     <div class="layout-outer" ref="scrollComponent">
         <div class="layout">
+            <!-- ALERTA BOOTSTRAP -->
+            <div v-if="showAlert" :class="`alert alert-${alertType} neon-alert fixed-top mx-auto mt-3 w-auto fade show`"
+                style="z-index:2000; max-width: 400px; left:0; right:0;">
+                {{ alertMessage }}
+            </div>
             <div v-if="error">Error: {{ error.message }}</div>
             <div v-else-if="data && data.length">
                 <div class="cards-container">
@@ -121,12 +312,23 @@ watch(scrollComponent, (el) => {
                                 </a>
                                 <span class="icon-count">{{ commentsCount[item.id] ?? '' }}</span>
                             </span>
-                            <span class="icon-action" title="Me gusta">
+                            <span v-if="!likedPosts.has(item.id)" class="icon-action" title="Me gusta"
+                                @click="giveLike(item.id)">
                                 <img :src="likeIcon" alt="Like image" />
                                 <span class="icon-count">{{ likesCount[item.id] ?? '' }}</span>
                             </span>
-                            <span class="icon-action" title="Guardar">
+                            <span v-else class="icon-action liked" title="Quitar like" @click="removeLike(item.id)">
+                                <img :src="likeIcon" alt="Like image" />
+                                <span class="icon-count">{{ likesCount[item.id] ?? '' }}</span>
+                            </span>
+                            <span v-if="!savedPosts.has(item.id)" class="icon-action" title="Guardar"
+                                @click="savePost(item.id)">
                                 <img :src="saveIcon" alt="Save image" />
+                                <span class="icon-count">{{ savedsCount[item.id] ?? '' }}</span>
+                            </span>
+                            <span v-else class="icon-action liked" title="Quitar guardado" @click="unsavePost(item.id)">
+                                <img :src="saveIcon" alt="Save image" />
+                                <span class="icon-count">{{ savedsCount[item.id] ?? '' }}</span>
                             </span>
                         </div>
                     </div>
@@ -253,6 +455,15 @@ watch(scrollComponent, (el) => {
     /*Cambia los iconos blancos en negro */
 }
 
+.icon-action.liked {
+    background: #8E44FF;
+    border-color: #8E44FF;
+}
+
+.icon-action.liked img {
+    filter: brightness(1.5) sepia(1) hue-rotate(260deg) saturate(2);
+}
+
 .icon-count {
     font-size: 1.08rem;
     color: #232323;
@@ -311,5 +522,17 @@ watch(scrollComponent, (el) => {
     text-align: center;
     font-size: 1.1em;
     margin: 2em 0 1em 0;
+}
+
+.liked {
+    color: #FF1744;
+}
+
+.neon-alert {
+    background: radial-gradient(ellipse at center, #8e44ff 0%, #3d1a6f 100%) !important;
+    color: #fff !important;
+    border: 1.5px solid #8e44ff !important;
+    box-shadow: 0 0 18px 2px #8e44ffcc, 0 0 2px #fff inset;
+    text-shadow: 0 0 4px #fff, 0 0 8px #8e44ff;
 }
 </style>

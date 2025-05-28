@@ -276,7 +276,7 @@ onMounted(async () => {
                                 <div v-for="post in userPosts" :key="post.id" class="post-item card-style">
                                     <a :href="`/posts/${post.id}`" class="card-link">
                                         <div class="card-content">
-                                            <div class="card-title">{{ post.titulo }}</div>
+                                            <div class="card-title text-dark">{{ post.titulo }}</div>
                                             <div class="card-desc">{{ post.descripcion }}</div>
                                             <img v-if="post.imagen" :src="'http://localhost:8080/' + post.imagen"
                                                 alt="Imagen" class="card-img"
@@ -296,7 +296,7 @@ onMounted(async () => {
                                 <div v-for="like in userLikes" :key="like.id" class="post-item card-style">
                                     <a :href="`/posts/${like.id}`" class="card-link">
                                         <div class="card-content">
-                                            <div class="card-title">{{ like.titulo }}</div>
+                                            <div class="card-title text-dark">{{ like.titulo }}</div>
                                             <div class="card-desc">{{ like.descripcion }}</div>
                                             <img v-if="like.imagen" :src="'http://localhost:8080/' + like.imagen"
                                                 alt="Imagen" class="card-img"
@@ -316,7 +316,7 @@ onMounted(async () => {
                                 <div v-for="saved in userSaveds" :key="saved.id" class="post-item card-style">
                                     <a :href="`/posts/${saved.id}`" class="card-link">
                                         <div class="card-content">
-                                            <div class="card-title">{{ saved.titulo }}</div>
+                                            <div class="card-title text-dark">{{ saved.titulo }}</div>
                                             <div class="card-desc">{{ saved.descripcion }}</div>
                                             <img v-if="saved.imagen" :src="'http://localhost:8080/' + saved.imagen"
                                                 alt="Imagen" class="card-img"
@@ -334,9 +334,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.container {
-    margin-top: 60px;
-}
 
 .profile-header {
     border-radius: 18px;
@@ -417,6 +414,7 @@ onMounted(async () => {
     border-radius: 12px;
     border: 2px solid #8E44FF33;
     box-shadow: 0 2px 12px #0001;
+    margin-bottom: 3vh;
 }
 
 .posts-grid {

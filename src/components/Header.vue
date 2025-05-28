@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import FriendsSidebar from './FriendsSidebar.vue'
 
 const logoSrc = ref('/public/favicon2.png')
 const hasToken = ref(!!sessionStorage.getItem('token'))
 const userInfo = ref(null)
+const showFriendsSidebar = ref(false)
 
 function updateTokenStatus() {
     hasToken.value = sessionStorage.getItem('token') !== null;
@@ -39,6 +41,9 @@ const userAvatar = computed(() => {
     return '/icons/favicon.svg'
 })
 
+function openFriendsSidebar() { showFriendsSidebar.value = true }
+function closeFriendsSidebar() { showFriendsSidebar.value = false }
+
 onMounted(updateTokenStatus)
 </script>
 
@@ -56,10 +61,11 @@ onMounted(updateTokenStatus)
                     <span class="icon">🏠</span>
                     <span class="text">Inicio</span>
                 </RouterLink>
-                <RouterLink class="menu-link" to="/documentos">
-                    <span class="icon">📄</span>
+                <button class="menu-link amigos-btn" type="button" @click="openFriendsSidebar"
+                    style="background:none;border:none;padding:0;">
+                    <span class="icon">👥</span>
                     <span class="text">Amigos</span>
-                </RouterLink>
+                </button>
                 <RouterLink class="menu-link" to="/configuracion">
                     <span class="icon">⚙️</span>
                     <span class="text">Mensajes</span>
@@ -95,6 +101,7 @@ onMounted(updateTokenStatus)
             </div>
         </div>
     </nav>
+    <FriendsSidebar :visible="showFriendsSidebar" @close="closeFriendsSidebar" />
 </template>
 
 <style scoped>
@@ -226,6 +233,50 @@ onMounted(updateTokenStatus)
 
 .menu-link.router-link-exact-active .icon,
 .menu-link:hover .icon {
+    color: #fff;
+}
+
+.amigos-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-left: 0.5em;
+    cursor: pointer;
+    outline: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    color: #f4f4f4;
+    font-weight: 600;
+    font-size: 1.08rem;
+    border-radius: 0.7em;
+    transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+    position: relative;
+}
+
+.amigos-btn .icon {
+    font-size: 1.3em;
+    color: #8E44FF;
+    filter: drop-shadow(0 0 2px #0008);
+    transition: color 0.18s;
+}
+
+.amigos-btn .text {
+    color: #f4f4f4;
+    font-weight: 600;
+    font-size: 1.05rem;
+    transition: color 0.18s;
+}
+
+.amigos-btn:hover,
+.amigos-btn:focus {
+    background: rgba(142, 68, 255, 0.32);
+    color: #fff;
+    box-shadow: 0 2px 8px #8E44FF22;
+}
+
+.amigos-btn:hover .icon,
+.amigos-btn:focus .icon {
     color: #fff;
 }
 

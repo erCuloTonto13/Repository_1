@@ -30,7 +30,7 @@ const router = createRouter({
     {
       path: '/crearPost',
       name: 'CrearPost',
-      component: () => import('../views/CrearPost.vue')
+      component: () => import('../views/CreatePost.vue')
     },
     {
       path: '/posts/:id',

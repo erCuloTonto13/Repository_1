@@ -58,16 +58,15 @@ onMounted(updateTokenStatus)
             <!-- TopMenu Links (centrados, visibles solo si hasToken) -->
             <div v-if="hasToken" class="menu-links-header">
                 <RouterLink class="menu-link" to="/">
-                    <span class="icon">🏠</span>
+                    <i class="bi bi-house-fill icon"></i>
                     <span class="text">Inicio</span>
                 </RouterLink>
-                <button class="menu-link amigos-btn" type="button" @click="openFriendsSidebar"
-                    style="background:none;border:none;padding:0;">
-                    <span class="icon">👥</span>
+                <button class="amigos-btn" type="button" @click="openFriendsSidebar">
+                    <i class="bi bi-people-fill icon"></i>
                     <span class="text">Amigos</span>
                 </button>
                 <RouterLink class="menu-link" to="/configuracion">
-                    <span class="icon">⚙️</span>
+                    <i class="bi bi-chat-left-text-fill icon"></i>
                     <span class="text">Mensajes</span>
                 </RouterLink>
             </div>
@@ -196,7 +195,8 @@ onMounted(updateTokenStatus)
     margin-left: 2vw;
 }
 
-.menu-link {
+.menu-link,
+.amigos-btn {
     display: flex;
     align-items: center;
     gap: 0.5em;
@@ -208,59 +208,22 @@ onMounted(updateTokenStatus)
     border-radius: 0.7em;
     transition: background 0.18s, color 0.18s, box-shadow 0.18s;
     position: relative;
-}
-
-.menu-link .icon {
-    font-size: 1.3em;
-    color: #8E44FF;
-    filter: drop-shadow(0 0 2px #0008);
-    transition: color 0.18s;
-}
-
-.menu-link .text {
-    color: #f4f4f4;
-    font-weight: 600;
-    font-size: 1.05rem;
-    transition: color 0.18s;
-}
-
-.menu-link.router-link-exact-active,
-.menu-link:hover {
-    background: rgba(142, 68, 255, 0.32);
-    color: #fff;
-    box-shadow: 0 2px 8px #8E44FF22;
-}
-
-.menu-link.router-link-exact-active .icon,
-.menu-link:hover .icon {
-    color: #fff;
-}
-
-.amigos-btn {
     background: none;
     border: none;
-    padding: 0;
-    margin-left: 0.5em;
     cursor: pointer;
     outline: none;
-    display: flex;
-    align-items: center;
-    gap: 0.5em;
-    color: #f4f4f4;
-    font-weight: 600;
-    font-size: 1.08rem;
-    border-radius: 0.7em;
-    transition: background 0.18s, color 0.18s, box-shadow 0.18s;
-    position: relative;
 }
 
+/* Iconos */
+.menu-link .icon,
 .amigos-btn .icon {
     font-size: 1.3em;
-    color: #8E44FF;
+    color: #fff;
     filter: drop-shadow(0 0 2px #0008);
     transition: color 0.18s;
 }
 
+.menu-link .text,
 .amigos-btn .text {
     color: #f4f4f4;
     font-weight: 600;
@@ -268,6 +231,9 @@ onMounted(updateTokenStatus)
     transition: color 0.18s;
 }
 
+/* Hover y activo para ambos */
+.menu-link.router-link-exact-active,
+.menu-link:hover,
 .amigos-btn:hover,
 .amigos-btn:focus {
     background: rgba(142, 68, 255, 0.32);
@@ -275,6 +241,8 @@ onMounted(updateTokenStatus)
     box-shadow: 0 2px 8px #8E44FF22;
 }
 
+.menu-link.router-link-exact-active .icon,
+.menu-link:hover .icon,
 .amigos-btn:hover .icon,
 .amigos-btn:focus .icon {
     color: #fff;

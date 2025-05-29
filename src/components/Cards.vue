@@ -1,11 +1,14 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useInfiniteScroll } from '@vueuse/core'
 import axios from 'axios'
 
 import commentIcon from '/public/icons/comment.svg'
 import likeIcon from '/public/icons/like.svg'
 import saveIcon from '/public/icons/save.svg'
+
+const router = useRouter()
 
 axios.defaults.baseURL = 'http://localhost:8080/api/'
 
@@ -296,20 +299,22 @@ watch(scrollComponent, (el) => {
                 <div class="cards-container">
                     <div v-for="(item, id) in data" :key="item.id || id" class="card"
                         :class="{ 'has-image': item.imagen }">
-                        <a class="card-link" :href="`/posts/${item.id}`" tabindex="0" target="_self"
-                            style="text-decoration: none; color: inherit; display: block;">
+                        <!-- Cambia el enlace a router.push -->
+                        <div class="card-link" tabindex="0"
+                            style="text-decoration: none; color: inherit; display: block; cursor: pointer;"
+                            @click="router.push(`/posts/${item.id}`)">
                             <div class="card-content">
                                 <p class="h5 mb-1 card-title">{{ item.titulo }}</p>
                                 <p class="h6 text-muted pt-2 mb-3">{{ item.descripcion }}</p>
                                 <img v-if="item.imagen" :src="getImageUrl(item.imagen)" alt="Imagen" class="card-img"
-                                    @error="event.target.style.display = 'none'" />
+                                    @error="event => event.target.style.display = 'none'" />
                             </div>
-                        </a>
+                        </div>
                         <div class="iconos">
                             <span class="icon-action" title="Comentar">
-                                <a :href="`/posts/${item.id}`">
+                                <span style="cursor:pointer" @click="router.push(`/posts/${item.id}`)">
                                     <img :src="commentIcon" alt="comment image" />
-                                </a>
+                                </span>
                                 <span class="icon-count">{{ commentsCount[item.id] ?? '' }}</span>
                             </span>
                             <span v-if="!likedPosts.has(item.id)" class="icon-action" title="Me gusta"

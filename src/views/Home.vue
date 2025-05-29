@@ -1,6 +1,5 @@
 <script setup>
 import Cards from '../components/Cards.vue'
-import FriendsList from '../components/FriendsList.vue';
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 
@@ -19,9 +18,6 @@ window.addEventListener('storage', () => {
 <template>
   <div class="center">
     <Cards />
-  </div>
-  <div id="friends">
-    <FriendsList />
   </div>
   <div v-if="isLogged" class="crear-post-fab" @click="goToCrearPost" title="Crear nuevo post">
     <span class="fab-icon">+</span>
@@ -45,30 +41,53 @@ window.addEventListener('storage', () => {
   position: fixed;
   right: 2.5vw;
   bottom: 2.5vw;
-  width: 54px;
-  height: 54px;
+  width: 64px;
+  height: 64px;
   color: #fff;
+  background: linear-gradient(135deg, #8E44FF 60%, #3d1a6f 100%);
   border-radius: 50%;
-  box-shadow: 0 2px 12px #0003;
+  box-shadow: 0 4px 32px #8e44ff88, 0 2px 12px #0006;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 2000;
-  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  border: 2.5px solid #fff;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s, border 0.2s, transform 0.13s;
+  animation: fab-pop 0.7s cubic-bezier(.23, 1.13, .5, 1.01);
+}
+
+@keyframes fab-pop {
+  0% {
+    transform: scale(0.7);
+  }
+
+  70% {
+    transform: scale(1.15);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .crear-post-fab:hover {
-  color: #121212;
-  box-shadow: 0 4px 18px #0004;
+  background: linear-gradient(135deg, #a259ff 70%, #8E44FF 100%);
+  color: #fff;
+  border: 2.5px solid #8E44FF;
+  box-shadow: 0 6px 32px #8e44ffcc, 0 4px 18px #0007;
+  transform: scale(1.08);
 }
 
 .fab-icon {
-  font-size: 2.1em;
+  font-size: 2.5em;
   font-weight: bold;
   line-height: 1;
   display: flex;
-  align-items:center;
+  align-items: center;
   justify-content: center;
+  text-shadow: 0 2px 12px #8e44ffcc, 0 1px 4px #000a;
+  letter-spacing: 0.01em;
+  user-select: none;
 }
 </style>

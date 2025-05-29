@@ -7,6 +7,11 @@ const hasToken = ref(!!sessionStorage.getItem('token'))
 const userInfo = ref(null)
 const showFriendsSidebar = ref(false)
 
+const props = defineProps({
+    showFriendsSidebar: Boolean
+})
+const emit = defineEmits(['update:showFriendsSidebar'])
+
 function updateTokenStatus() {
     hasToken.value = sessionStorage.getItem('token') !== null;
     if (hasToken.value) {
@@ -41,8 +46,8 @@ const userAvatar = computed(() => {
     return '/icons/favicon.svg'
 })
 
-function openFriendsSidebar() { showFriendsSidebar.value = true }
-function closeFriendsSidebar() { showFriendsSidebar.value = false }
+function openFriendsSidebar() { emit('update:showFriendsSidebar', true) }
+function closeFriendsSidebar() { emit('update:showFriendsSidebar', false) }
 
 onMounted(updateTokenStatus)
 </script>
@@ -100,7 +105,7 @@ onMounted(updateTokenStatus)
             </div>
         </div>
     </nav>
-    <FriendsSidebar :visible="showFriendsSidebar" @close="closeFriendsSidebar" />
+    <FriendsSidebar :visible="props.showFriendsSidebar" @close="closeFriendsSidebar" />
 </template>
 
 <style scoped>

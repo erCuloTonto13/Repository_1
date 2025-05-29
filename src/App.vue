@@ -40,14 +40,17 @@ const router = useRouter()
 router.afterEach(() => {
   isLogged.value = !!sessionStorage.getItem('token')
 })
+
+const showFriendsSidebar = ref(false)
 </script>
 
 <template>
   <div class="body">
-    <Header class="fixed-top" />
+    <Header class="fixed-top" :show-friends-sidebar="showFriendsSidebar"
+      @update:show-friends-sidebar="val => showFriendsSidebar = val" />
     <div class="main-layout">
       <div class="main-content">
-        <RouterView class="layout" />
+        <RouterView class="layout" :show-friends-sidebar="showFriendsSidebar" />
       </div>
     </div>
   </div>

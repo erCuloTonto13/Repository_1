@@ -1,6 +1,6 @@
 <script setup>
 import axios from 'axios';
-import { onMounted, ref, onUnmounted } from 'vue';
+import { onMounted, ref, onUnmounted, computed } from 'vue';
 
 axios.defaults.baseURL = 'http://localhost:8080/api/';
 let friends = ref([])
@@ -16,6 +16,22 @@ let searchError = ref('')
 // Estado para controlar el hover de cada amigo
 let hoveredFriendIndex = ref(null)
 let activeTab = ref('amigos')
+
+let searchFriends = ref('')
+let searchRequests = ref('')
+
+const alertMessage = ref('')
+const alertType = ref('danger')
+const showAlert = ref(false)
+
+function showBootstrapAlert(message, type = 'danger') {
+  alertMessage.value = message
+  alertType.value = type
+  showAlert.value = true
+  setTimeout(() => {
+    showAlert.value = false
+  }, 4000)
+}
 
 async function fetchFriendInfo(id) {
   let token = sessionStorage.getItem('token')
@@ -154,12 +170,37 @@ async function loadPendingRequests() {
 async function acceptFriend(amigo_id) {
   const token = sessionStorage.getItem('token')
   try {
-    await axios.put(`acceptFriendship/${amigo_id}`, {}, {
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    await axios.post('/acceptFriendship', {
+      amigo_id,
+      _method: 'PUT'
+    }, {
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        'Content-Type': 'application/json'
+      }
     })
     await loadFriends()
+    await loadPendingRequests()
+    showBootstrapAlert('Amistad aceptada.', 'success')
   } catch (e) {
-    alert(e.response?.data?.error || 'Error al aceptar la amistad.')
+    showBootstrapAlert(e.response?.data?.error || 'Error al aceptar la amistad.', 'danger')
+  }
+}
+
+async function deleteFriend(amigo_id) {
+  const token = sessionStorage.getItem('token')
+  try {
+    await axios.delete('/friendships', {
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        'Content-Type': 'application/json'
+      },
+      data: { amigo_id }
+    })
+    await loadFriends()
+    showBootstrapAlert('Amigo eliminado.', 'success')
+  } catch (e) {
+    showBootstrapAlert(e.response?.data?.error || 'Error al eliminar la amistad.', 'danger')
   }
 }
 
@@ -176,16 +217,62 @@ async function searchUsers() {
       params: { usuario: searchQuery.value },
       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     })
-    searchResults.value = Array.isArray(response.data) ? response.data : []
+    let results = Array.isArray(response.data) ? response.data : []
+    // Filtrar para que no aparezca el usuario actual
+    let usuario_id = null
+    try {
+      usuario_id = JSON.parse(atob(token.split('.')[1])).sub
+    } catch { }
+    if (usuario_id) {
+      results = results.filter(u => String(u.id) !== String(usuario_id))
+    }
+    // Filtrar para que no aparezcan personas ya agregadas como amigos
+    const amigosIds = new Set(friends.value.map(f => String(f.amigo_id)))
+    results = results.filter(u => !amigosIds.has(String(u.id)))
+    searchResults.value = results
     if (!searchResults.value.length) {
       searchError.value = 'No se encontraron usuarios.'
     }
   } catch (e) {
-    searchError.value = e.response?.data?.mensaje || 'Error al buscar usuarios.'
+    searchError.value = 'No se pudo realizar la búsqueda. Intenta de nuevo.'
   } finally {
     searching.value = false
   }
 }
+
+async function addFriend(amigo_id) {
+  const token = sessionStorage.getItem('token')
+  try {
+    await axios.post('/friendships', {
+      amigo_id: amigo_id
+    }, {
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        'Content-Type': 'application/json'
+      }
+    })
+    showBootstrapAlert('Solicitud de amistad enviada.', 'success')
+    searchResults.value = searchResults.value.filter(u => u.id !== amigo_id)
+    await loadPendingRequests()
+  } catch (e) {
+    showBootstrapAlert('No se pudo enviar la solicitud. Puede que ya seas amigo o la solicitud esté pendiente.', 'danger')
+  }
+}
+
+const filteredFriends = computed(() => {
+  if (!searchFriends.value.trim()) return friends.value
+  return friends.value.filter(f => {
+    const name = (f.usuario || f.nombre || f.name || '').toLowerCase()
+    return name.includes(searchFriends.value.trim().toLowerCase())
+  })
+})
+const filteredRequests = computed(() => {
+  if (!searchRequests.value.trim()) return pendingRequests.value
+  return pendingRequests.value.filter(f => {
+    const name = (f.usuario || f.nombre || f.name || '').toLowerCase()
+    return name.includes(searchRequests.value.trim().toLowerCase())
+  })
+})
 
 onMounted(() => {
   loadFriends()
@@ -202,6 +289,10 @@ onUnmounted(() => {
 
 <template>
   <aside class="friends-list-aside">
+    <div v-if="showAlert" :class="`alert alert-${alertType} neon-alert fixed-top mx-auto mt-3 w-auto fade show`"
+      style="z-index:2000; max-width: 400px; left:0; right:0;">
+      {{ alertMessage }}
+    </div>
     <!-- BUSCADOR DE USUARIOS -->
     <div class="friends-search-header">
       <h2 class="friends-list-title">Buscar usuario</h2>
@@ -230,7 +321,7 @@ onUnmounted(() => {
           <div class="user-card-name">
             {{ user.usuario || user.nombre || user.name || 'Usuario' }}
           </div>
-          <button class="user-card-add-btn" title="Agregar amigo">
+          <button class="user-card-add-btn" title="Agregar amigo" @click="addFriend(user.id)">
             <i class="bi bi-person-plus-fill"></i>
           </button>
         </div>
@@ -255,9 +346,14 @@ onUnmounted(() => {
       </ul>
     </div>
     <div class="friends-list-rect">
+      <div v-if="loadingFriends" class="loading-friends-msg">Cargando...</div>
       <!-- TAB: AMIGOS -->
-      <div v-if="activeTab === 'amigos'">
-        <div v-for="(friend, index) in friends" :key="index" class="user-card-rect"
+      <div v-else-if="activeTab === 'amigos'">
+        <div class="friends-tab-search">
+          <input v-model="searchFriends" type="text" class="friends-search-input"
+            placeholder="Buscar en tus amigos..." />
+        </div>
+        <div v-for="(friend, index) in filteredFriends" :key="index" class="user-card-rect"
           @mouseenter="hoveredFriendIndex = index" @mouseleave="hoveredFriendIndex = null">
           <div class="user-card-img">
             <img :src="friend.foto
@@ -271,18 +367,24 @@ onUnmounted(() => {
           <div class="user-card-name">
             {{ friend.usuario || friend.nombre || friend.name || 'Amigo' }}
           </div>
-          <button v-if="hoveredFriendIndex === index" class="user-card-remove-btn" title="Eliminar amigo">
+          <button v-if="hoveredFriendIndex === index" class="user-card-remove-btn" title="Eliminar amigo"
+            @click="deleteFriend(friend.amigo_id)">
             <i class="bi bi-person-x-fill"></i>
           </button>
           <span v-else class="user-card-friend-icon" title="Amigo">
             <i class="bi bi-person-check-fill"></i>
           </span>
         </div>
-        <div v-if="!loadingFriends && !friends.length && noFriendsMsg" class="no-friends-msg">{{ noFriendsMsg }}</div>
+        <div v-if="!loadingFriends && !filteredFriends.length && noFriendsMsg" class="no-friends-msg">{{ noFriendsMsg }}
+        </div>
       </div>
       <!-- TAB: SOLICITUDES -->
       <div v-else>
-        <div v-for="(user, idx) in pendingRequests" :key="idx" class="user-card-rect">
+        <div class="friends-tab-search">
+          <input v-model="searchRequests" type="text" class="friends-search-input"
+            placeholder="Buscar en solicitudes..." />
+        </div>
+        <div v-for="(user, idx) in filteredRequests" :key="idx" class="user-card-rect">
           <div class="user-card-img">
             <img :src="user.foto
               ? (user.foto.startsWith('http')
@@ -300,7 +402,7 @@ onUnmounted(() => {
             <i class="bi bi-person-check"></i>
           </button>
         </div>
-        <div v-if="!loadingFriends && !pendingRequests.length" class="no-friends-msg">No tienes solicitudes pendientes.
+        <div v-if="!loadingFriends && !filteredRequests.length" class="no-friends-msg">No tienes solicitudes pendientes.
         </div>
       </div>
     </div>
@@ -311,20 +413,24 @@ onUnmounted(() => {
 .friends-list-aside {
   background: black;
   border-radius: 8px;
-  margin-bottom: 1.2rem;
-  padding-bottom: 0.5rem;
+  margin-bottom: 0;
+  padding-bottom: 0;
   padding-top: 0.7rem;
-  position: relative;
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: auto;
+  bottom: 0;
   color: #8E44FF;
-  z-index: 10;
+  z-index: 2000;
   border: 1.5px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
   min-width: 240px;
   max-width: 100vw;
   display: flex;
   flex-direction: column;
-  height: 95vh;
-  max-height: 95vh;
+  height: 100vh;
+  max-height: 100vh;
   overflow: hidden;
 }
 
@@ -398,7 +504,7 @@ onUnmounted(() => {
 }
 
 .friends-search-results-rect {
-  max-height: 28vh;
+  max-height: 40vh;
   min-height: 6vh;
   overflow-y: auto;
   padding: 0.5em 1.2rem 0.5em 1.2rem;
@@ -416,8 +522,18 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.7em;
-  min-height: 0;
-  max-height: calc(95vh - 28vh - 8.5em);
+  min-height: 30vh;
+  max-height: 75vh;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.loading-friends-msg {
+  color: #fff;
+  text-align: center;
+  font-size: 1.3em;
+  font-weight: 500;
+  margin: 3vh 0 2vh 0;
+  letter-spacing: 0.04em;
 }
 
 .search-loading,
@@ -553,6 +669,32 @@ onUnmounted(() => {
 .nav-tabs-friends .nav-link:hover {
   background: #8E44FF;
   color: #fff;
+}
+
+.friends-tab-search {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 1em 0 1.2em 0;
+}
+
+.friends-tab-search .friends-search-input {
+  max-width: 320px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.alert {
+  position: fixed;
+  top: 2vh;
+  right: 2vw;
+  z-index: 2100;
+  padding: 2.5vh 4vw;
+  border-radius: 1.2vw;
+  font-size: 1.2em;
+  min-width: 25vw;
+  max-width: 50vw;
+  transition: opacity 0.3s;
 }
 
 @media (max-width: 600px) {

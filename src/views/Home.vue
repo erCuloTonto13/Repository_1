@@ -1,7 +1,11 @@
 <script setup>
 import Cards from '../components/Cards.vue'
 import { useRouter } from 'vue-router'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+
+const props = defineProps({
+  showFriendsSidebar: Boolean
+})
 
 const router = useRouter()
 const isLogged = ref(!!sessionStorage.getItem('token'))
@@ -13,13 +17,15 @@ function goToCrearPost() {
 window.addEventListener('storage', () => {
   isLogged.value = !!sessionStorage.getItem('token')
 })
+
+const fabClass = computed(() => props.showFriendsSidebar ? 'crear-post-fab fab-left' : 'crear-post-fab')
 </script>
 
 <template>
   <div class="center">
     <Cards />
   </div>
-  <div v-if="isLogged" class="crear-post-fab" @click="goToCrearPost" title="Crear nuevo post">
+  <div v-if="isLogged" :class="fabClass" @click="goToCrearPost" title="Crear nuevo post">
     <span class="fab-icon">+</span>
   </div>
 </template>
@@ -53,8 +59,13 @@ window.addEventListener('storage', () => {
   cursor: pointer;
   z-index: 2000;
   border: 2.5px solid #fff;
-  transition: background 0.2s, color 0.2s, box-shadow 0.2s, border 0.2s, transform 0.13s;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s, border 0.2s, transform 0.13s, right 0.2s, left 0.2s;
   animation: fab-pop 0.7s cubic-bezier(.23, 1.13, .5, 1.01);
+}
+
+.fab-left {
+  right: auto !important;
+  left: 2.5vw !important;
 }
 
 @keyframes fab-pop {

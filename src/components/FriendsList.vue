@@ -259,6 +259,23 @@ async function addFriend(amigo_id) {
   }
 }
 
+async function deleteRequest(amigo_id) {
+  const token = sessionStorage.getItem('token')
+  try {
+    await axios.delete('/declineFriendship', {
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        'Content-Type': 'application/json'
+      },
+      data: { amigo_id }
+    })
+    await loadPendingRequests()
+    showBootstrapAlert('Solicitud rechazada.', 'success')
+  } catch (e) {
+    showBootstrapAlert('No se pudo rechazar la solicitud.', 'danger')
+  }
+}
+
 const filteredFriends = computed(() => {
   if (!searchFriends.value.trim()) return friends.value
   return friends.value.filter(f => {
@@ -400,6 +417,10 @@ onUnmounted(() => {
           <button class="user-card-add-btn user-card-outline-btn" title="Aceptar solicitud"
             @click="acceptFriend(user.amigo_id)">
             <i class="bi bi-person-check"></i>
+          </button>
+          <button class="user-card-remove-btn user-card-outline-btn" title="Rechazar solicitud"
+            @click="deleteRequest(user.amigo_id)">
+            <i class="bi bi-x-circle"></i>
           </button>
         </div>
         <div v-if="!loadingFriends && !filteredRequests.length" class="no-friends-msg">No tienes solicitudes pendientes.
@@ -604,7 +625,8 @@ onUnmounted(() => {
 
 .user-card-add-btn:hover {
   background: #00FFC6;
-  color: #181818;
+  color: #32be19;
+  border: 2px solid #32be19;
 }
 
 .user-card-friend-icon {
@@ -622,7 +644,7 @@ onUnmounted(() => {
 
 .user-card-remove-btn:hover {
   background: #fff;
-  color: #ff2d2d;
+  color: #ff2d2d !important;
   border: 2px solid #ff2d2d;
 }
 
@@ -635,7 +657,7 @@ onUnmounted(() => {
 
 .user-card-outline-btn:hover {
   background: #fff;
-  color: #181818;
+  color: #32be19;
 }
 
 .no-friends-msg {
@@ -689,12 +711,17 @@ onUnmounted(() => {
   top: 2vh;
   right: 2vw;
   z-index: 2100;
-  padding: 2.5vh 4vw;
+  padding: 1.2vh 4vw;
   border-radius: 1.2vw;
   font-size: 1.2em;
   min-width: 25vw;
   max-width: 50vw;
   transition: opacity 0.3s;
+  background: radial-gradient(ellipse at center, #8e44ff 0%, #3d1a6f 100%) !important;
+  color: #fff !important;
+  border: 1.5px solid #8e44ff !important;
+  box-shadow: 0 0 18px 2px #8e44ffcc, 0 0 2px #fff inset;
+  text-shadow: 0 0 4px #fff, 0 0 8px #8e44ff;
 }
 
 @media (max-width: 600px) {

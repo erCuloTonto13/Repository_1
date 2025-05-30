@@ -30,7 +30,7 @@ function closeSidebar() {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.32);
+    
     z-index: 2000;
     display: flex;
     justify-content: flex-end;

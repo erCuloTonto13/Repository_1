@@ -234,7 +234,8 @@ onMounted(async () => {
                     <div class="profile-info">
                         <div class="d-flex align-items-center mb-2">
                             <h2 class="fw-bold fs-3 mb-0 me-2">{{ userInfo.usuario }}</h2>
-                            <span v-if="userInfo.verificado" class="badge bg-success me-1"><i class="bi bi-check"></i> Verificado</span>
+                            <span v-if="userInfo.verificado" class="badge bg-success me-1"><i class="bi bi-check"></i>
+                                Verificado</span>
                             <span v-if="userInfo.is_admin" class="badge bg-warning text-dark">Administrador</span>
                             <!-- Botón de editar perfil a la derecha de los badges -->
                             <button @click="router.push('/EditProfile')" class="btn edit-profile-btn"
@@ -334,7 +335,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-
 .profile-header {
     border-radius: 18px;
     padding: 20px;
@@ -394,6 +394,7 @@ onMounted(async () => {
     font-weight: 600;
 
 }
+
 .nav-link:hover {
     color: #8E44FF;
     border-bottom: 2px solid #8E44FF;

@@ -22,15 +22,7 @@ function animateAndRedirectHome() {
   loginPageVisible.value = false
   setTimeout(() => {
     window.dispatchEvent(new Event('token-changed'))
-    // Redirigir a la página anterior si es interna, si no a home
-    const prevUrl = document.referrer
-    const isInternal = prevUrl && prevUrl.startsWith(window.location.origin)
-    const isLogin = prevUrl && prevUrl.endsWith('/login')
-    if (isInternal && !isLogin) {
-      window.location.href = prevUrl
-    } else {
-      window.location.href = '/'
-    }
+    router.push('/')
   }, 700) // Duración de la animación
 }
 

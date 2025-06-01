@@ -42,15 +42,21 @@ router.afterEach(() => {
 })
 
 const showFriendsSidebar = ref(false)
+const showMessagesSidebar = ref(false)
+
+// Escuchar eventos de Header para controlar showMessagesSidebar
+defineExpose({ showMessagesSidebar })
 </script>
 
 <template>
   <div class="body">
     <Header class="fixed-top" :show-friends-sidebar="showFriendsSidebar"
-      @update:show-friends-sidebar="val => showFriendsSidebar = val" />
+      @update:show-friends-sidebar="val => showFriendsSidebar = val"
+      @update:show-messages-sidebar="val => showMessagesSidebar = val" />
     <div class="main-layout">
       <div class="main-content">
-        <RouterView class="layout" :show-friends-sidebar="showFriendsSidebar" />
+        <RouterView class="layout" :show-friends-sidebar="showFriendsSidebar"
+          :show-messages-sidebar="showMessagesSidebar" />
       </div>
     </div>
   </div>

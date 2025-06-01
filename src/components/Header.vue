@@ -1,16 +1,18 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import FriendsSidebar from './FriendsSidebar.vue'
+import MessagesSidebarContainer from './MessagesSidebarContainer.vue'
 
 const logoSrc = ref('/public/favicon2.png')
 const hasToken = ref(!!sessionStorage.getItem('token'))
 const userInfo = ref(null)
 const showFriendsSidebar = ref(false)
+const showMessagesSidebar = ref(false)
 
 const props = defineProps({
     showFriendsSidebar: Boolean
 })
-const emit = defineEmits(['update:showFriendsSidebar'])
+const emit = defineEmits(['update:showFriendsSidebar', 'update:show-messages-sidebar'])
 
 function updateTokenStatus() {
     hasToken.value = sessionStorage.getItem('token') !== null;
@@ -48,6 +50,14 @@ const userAvatar = computed(() => {
 
 function openFriendsSidebar() { emit('update:showFriendsSidebar', true) }
 function closeFriendsSidebar() { emit('update:showFriendsSidebar', false) }
+function openMessagesSidebar() {
+    showMessagesSidebar.value = true
+    emit('update:show-messages-sidebar', true)
+}
+function closeMessagesSidebar() {
+    showMessagesSidebar.value = false
+    emit('update:show-messages-sidebar', false)
+}
 
 onMounted(updateTokenStatus)
 </script>
@@ -66,14 +76,15 @@ onMounted(updateTokenStatus)
                     <i class="bi bi-house-fill icon"></i>
                     <span class="text">Inicio</span>
                 </RouterLink>
+                <button class="amigos-btn" type="button" @click="openMessagesSidebar">
+                    <i class="bi bi-chat-left-text-fill icon"></i>
+                    <span class="text">Mensajes</span>
+                </button>
                 <button class="amigos-btn" type="button" @click="openFriendsSidebar">
                     <i class="bi bi-people-fill icon"></i>
                     <span class="text">Amigos</span>
                 </button>
-                <RouterLink class="menu-link" to="/configuracion">
-                    <i class="bi bi-chat-left-text-fill icon"></i>
-                    <span class="text">Mensajes</span>
-                </RouterLink>
+
             </div>
             <!-- Parte Derecha -->
             <div class="collapse navbar-collapse justify-content-end">
@@ -105,7 +116,8 @@ onMounted(updateTokenStatus)
             </div>
         </div>
     </nav>
-    <FriendsSidebar :visible="props.showFriendsSidebar" @close="closeFriendsSidebar" />
+    <FriendsSidebar v-if="props.showFriendsSidebar" :visible="props.showFriendsSidebar" @close="closeFriendsSidebar" />
+    <MessagesSidebarContainer v-if="showMessagesSidebar" :visible="showMessagesSidebar" @close="closeMessagesSidebar" />
 </template>
 
 <style scoped>

@@ -4,7 +4,8 @@ import { useRouter } from 'vue-router'
 import { ref, computed } from 'vue'
 
 const props = defineProps({
-  showFriendsSidebar: Boolean
+  showFriendsSidebar: Boolean,
+  showMessagesSidebar: Boolean
 })
 
 const router = useRouter()
@@ -25,7 +26,7 @@ const fabClass = computed(() => props.showFriendsSidebar ? 'crear-post-fab fab-l
   <div class="center">
     <Cards />
   </div>
-  <div v-if="isLogged" :class="fabClass" @click="goToCrearPost" title="Crear nuevo post">
+  <div v-if="isLogged && !props.showMessagesSidebar" :class="fabClass" @click="goToCrearPost" title="Crear nuevo post">
     <span class="fab-icon">+</span>
   </div>
 </template>

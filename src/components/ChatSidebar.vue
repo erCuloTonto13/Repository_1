@@ -1,7 +1,9 @@
 <script setup>
-import { ref, onMounted, watch, defineProps, defineEmits } from 'vue'
+import { ref, onMounted, watch, defineProps, defineEmits, onUnmounted } from 'vue'
 import axios from 'axios'
+import echo from '../echo.js'; // Ajusta la ruta si es necesario
 
+axios.defaults.baseURL = 'http://localhost:8080/api/';
 const props = defineProps({
     chatId: { type: [String, Number], required: true },
     visible: Boolean,
@@ -88,7 +90,38 @@ watch(() => props.chatId, fetchMessages)
 onMounted(() => {
     userId.value = getUserIdFromToken()
     fetchMessages()
-})
+
+    if (props.chatId) {
+        echo.join(`chat.${props.chatId}`)
+            .here((users) => {
+                // Usuarios conectados al chat
+            })
+            .joining((user) => {
+                // Usuario se une al chat
+            })
+            .leaving((user) => {
+                // Usuario sale del chat
+            })
+            .listen('MessageSent', (e) => {
+                // e.message contiene el mensaje nuevo
+                messages.value.push({
+                    id: e.message.id,
+                    texto: e.message.texto,
+                    emisor_id: e.message.emisor_id,
+                    created_at: e.message.created_at,
+                    imagen: e.message.imagen || null,
+                });
+                scrollToBottom();
+            });
+    }
+});
+
+// No olvides salir del canal cuando cambias de chat o destruyes el componente
+onUnmounted(() => {
+    if (props.chatId) {
+        echo.leave(`chat.${props.chatId}`);
+    }
+});
 </script>
 
 <template>

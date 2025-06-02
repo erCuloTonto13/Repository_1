@@ -70,7 +70,7 @@ async function sendMessage() {
             headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         })
         newMessage.value = ''
-        await fetchMessages()
+        // No recargamos todos los mensajes aquí, dejamos que Echo lo añada
         scrollToBottom()
     } catch (e) {
         error.value = e.response?.data?.error || 'Error al enviar mensaje'
@@ -103,15 +103,17 @@ onMounted(() => {
                 // Usuario sale del chat
             })
             .listen('MessageSent', (e) => {
-                // e.message contiene el mensaje nuevo
-                messages.value.push({
-                    id: e.message.id,
-                    texto: e.message.texto,
-                    emisor_id: e.message.emisor_id,
-                    created_at: e.message.created_at,
-                    imagen: e.message.imagen || null,
-                });
-                scrollToBottom();
+                // Solo añadir si no existe ya (por id)
+                if (!messages.value.some(m => m.id === e.message.id)) {
+                    messages.value.push({
+                        id: e.message.id,
+                        texto: e.message.texto,
+                        emisor_id: e.message.emisor_id,
+                        created_at: e.message.created_at,
+                        imagen: e.message.imagen || null,
+                    });
+                    scrollToBottom();
+                }
             });
     }
 });

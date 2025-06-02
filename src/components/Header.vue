@@ -1,16 +1,18 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import FriendsSidebar from './FriendsSidebar.vue'
+import MessagesSidebarContainer from './MessagesSidebarContainer.vue'
 
 const logoSrc = ref('/public/favicon2.png')
 const hasToken = ref(!!sessionStorage.getItem('token'))
 const userInfo = ref(null)
+const showFriendsSidebar = ref(false)
+const showMessagesSidebar = ref(false)
 
-function onLogoEnter() {
-    logoSrc.value = '/public/favicon3.png'
-}
-function onLogoLeave() {
-    logoSrc.value = '/public/favicon2.png'
-}
+const props = defineProps({
+    showFriendsSidebar: Boolean
+})
+const emit = defineEmits(['update:showFriendsSidebar', 'update:show-messages-sidebar'])
 
 function updateTokenStatus() {
     hasToken.value = sessionStorage.getItem('token') !== null;
@@ -46,6 +48,17 @@ const userAvatar = computed(() => {
     return '/icons/favicon.svg'
 })
 
+function openFriendsSidebar() { emit('update:showFriendsSidebar', true) }
+function closeFriendsSidebar() { emit('update:showFriendsSidebar', false) }
+function openMessagesSidebar() {
+    showMessagesSidebar.value = true
+    emit('update:show-messages-sidebar', true)
+}
+function closeMessagesSidebar() {
+    showMessagesSidebar.value = false
+    emit('update:show-messages-sidebar', false)
+}
+
 onMounted(updateTokenStatus)
 </script>
 
@@ -53,11 +66,26 @@ onMounted(updateTokenStatus)
     <nav class="navbar navbar-expand-md navbar-dark">
         <div class="container-fluid container pb-3">
             <!-- Parte Izquierda -->
-            <a class="navbar-brand d-flex align-items-center ml-5" href="/" @mouseenter="onLogoEnter"
-                @mouseleave="onLogoLeave">
+            <a class="navbar-brand d-flex align-items-center ml-5" href="/">
                 <img :src="logoSrc" width="32" alt="Logo" />
                 <span class="fw-semibold fs-4">POMSE</span>
             </a>
+            <!-- TopMenu Links (centrados, visibles solo si hasToken) -->
+            <div v-if="hasToken" class="menu-links-header">
+                <RouterLink class="menu-link" to="/">
+                    <i class="bi bi-house-fill icon"></i>
+                    <span class="text">Inicio</span>
+                </RouterLink>
+                <button class="amigos-btn" type="button" @click="openMessagesSidebar">
+                    <i class="bi bi-chat-left-text-fill icon"></i>
+                    <span class="text">Mensajes</span>
+                </button>
+                <button class="amigos-btn" type="button" @click="openFriendsSidebar">
+                    <i class="bi bi-people-fill icon"></i>
+                    <span class="text">Amigos</span>
+                </button>
+
+            </div>
             <!-- Parte Derecha -->
             <div class="collapse navbar-collapse justify-content-end">
                 <ul class="navbar-nav mb-md-0">
@@ -88,6 +116,8 @@ onMounted(updateTokenStatus)
             </div>
         </div>
     </nav>
+    <FriendsSidebar v-if="props.showFriendsSidebar" :visible="props.showFriendsSidebar" @close="closeFriendsSidebar" />
+    <MessagesSidebarContainer v-if="showMessagesSidebar" :visible="showMessagesSidebar" @close="closeMessagesSidebar" />
 </template>
 
 <style scoped>
@@ -96,8 +126,9 @@ onMounted(updateTokenStatus)
 }
 
 .navbar {
-    background: linear-gradient(to bottom, #222 73%, black 80%, transparent 93%);
-    height: 9vh;
+    background: black;
+    height: 7vh;
+    padding-top: 2vh;
     min-height: 48px;
     position: fixed;
     top: 0;
@@ -120,12 +151,6 @@ onMounted(updateTokenStatus)
     .navbar-brand img {
         width: 24px;
     }
-}
-
-.navbar .navbar-brand,
-.navbar .nav-link,
-.navbar span {
-    color: rgb(255, 221, 28) !important;
 }
 
 .avatar-img-header {
@@ -151,7 +176,7 @@ onMounted(updateTokenStatus)
 .dropdown-menu {
     background: #232323;
     color: #fff;
-    border: 1px solid #bfa600;
+    border: 1px solid #8E44FF;
 }
 
 .dropdown-item {
@@ -161,11 +186,95 @@ onMounted(updateTokenStatus)
 
 .dropdown-item:hover,
 .dropdown-item:focus {
-    background: #282828;
-    color: #ffd91c;
+    background: #8E44FF33;
+    color: #8E44FF;
 }
 
 .dropdown-item.text-danger {
     color: #ff4d4f;
+}
+
+.page-title {
+    color: #fff !important;
+    border-bottom: 2.5px solid #00FFC6;
+    padding-bottom: 2px;
+    line-height: 1.1;
+    box-shadow: 0 2px 8px #00ffc666;
+}
+
+.menu-links-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 2vw;
+    width: 100%;
+    margin-left: 2vw;
+}
+
+.menu-link,
+.amigos-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    color: #f4f4f4;
+    font-weight: 600;
+    font-size: 1.08rem;
+    text-decoration: none;
+    padding: 0.1vw 1.2em;
+    border-radius: 0.7em;
+    transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+    position: relative;
+    background: none;
+    border: none;
+    cursor: pointer;
+    outline: none;
+}
+
+/* Iconos */
+.menu-link .icon,
+.amigos-btn .icon {
+    font-size: 1.3em;
+    color: #fff;
+    filter: drop-shadow(0 0 2px #0008);
+    transition: color 0.18s;
+}
+
+.menu-link .text,
+.amigos-btn .text {
+    color: #f4f4f4;
+    font-weight: 600;
+    font-size: 1.05rem;
+    transition: color 0.18s;
+}
+
+/* Hover y activo para ambos */
+.menu-link.router-link-exact-active,
+.menu-link:hover,
+.amigos-btn:hover,
+.amigos-btn:focus {
+    background: rgba(142, 68, 255, 0.32);
+    color: #fff;
+    box-shadow: 0 2px 8px #8E44FF22;
+}
+
+.menu-link.router-link-exact-active .icon,
+.menu-link:hover .icon,
+.amigos-btn:hover .icon,
+.amigos-btn:focus .icon {
+    color: #fff;
+}
+
+@media (max-width: 700px) {
+    .menu-links-header {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100vw;
+        padding: 0.5em 0 0.5em 0;
+        box-shadow: none;
+        border-radius: 0;
+        margin-left: 0;
+    }
 }
 </style>

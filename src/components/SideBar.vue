@@ -28,31 +28,36 @@ const expanded = ref(false)
 .sidebar {
     position: fixed;
     top: 7vh;
-    left: 0;
+    left: 0.05vw;
     height: 90vh;
     width: 2.5vw;
     min-width: 48px;
     max-width: 220px;
-    background: linear-gradient(90deg, rgba(34, 34, 34, 0.85) 70%, rgba(34, 34, 34, 0.18) 100%);
-    color: #e2c94c;
-    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s, box-shadow 0.3s;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.92) 0%, #232323 60%, rgba(36, 36, 36, 0.7) 80%, rgba(0, 0, 0, 0.05) 100%);
+    color: #f4f4f4;
+    transition: width 0.32s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s, box-shadow 0.3s;
     overflow-x: hidden;
     z-index: 1000;
-    box-shadow: 0.2vw 0 1vw 0.1vw rgba(0, 0, 0, 0.18);
+    box-shadow: 0.3vw 0 1vw 0.15vw #8E44FF33;
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: 2vh;
-    border-radius: 0.7vw;
-    border: 1.5px solid rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(4px);
+    margin-top: 2.5vh;
+    border-radius: 1vw;
+    border: 0.12vw solid;
+    border-image: linear-gradient(135deg, #000 0%, transparent 100%) 1;
+    backdrop-filter: blur(10px) saturate(1.2);
+    background-clip: padding-box;
 }
 
 .sidebar.expanded {
     width: 10vw;
     min-width: 120px;
-    background: linear-gradient(90deg, rgba(34, 34, 34, 0.93) 80%, rgba(34, 34, 34, 0.10) 100%);
-    box-shadow: 0.2vw 0 2vw 0.2vw rgba(255, 217, 28, 0.08);
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.92) 0%, #232323 60%, rgba(36, 36, 36, 0.7) 80%, rgba(0, 0, 0, 0.05) 100%);
+    box-shadow: 0.2vw 0 1vw 0.1vw #8E44FF33;
+    border-radius: 1vw;
+    border: 0.12vw solid;
+    border-image: linear-gradient(135deg, #000 0%, transparent 100%) 1;
 }
 
 @media (max-width: 900px) {
@@ -85,10 +90,13 @@ const expanded = ref(false)
         width: 60vw;
         min-width: 120px;
         height: calc(100vh - 7vh);
-        background: #232323ee;
+        background: rgba(36, 36, 36, 0.95);
         pointer-events: auto;
-        box-shadow: 0.2vw 0 1vw 0.1vw rgba(255, 217, 28, 0.10);
+        box-shadow: 0.2vw 0 0.5vw 0.05vw #8E44FF44;
         backdrop-filter: blur(8px);
+        border-radius: 1vw;
+        border: 0.12vw solid;
+        border-image: linear-gradient(135deg, #000 0%, transparent 100%) 1;
     }
 }
 
@@ -101,36 +109,41 @@ const expanded = ref(false)
 }
 
 .menu-item {
-    padding: 1vh 0.6vw;
-    border-radius: 0.6vw;
+    padding: 1.1vh 0.8vw;
+    border-radius: 0.7vw;
     cursor: pointer;
     white-space: nowrap;
-    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    transition: background 0.22s, color 0.22s, box-shadow 0.22s, border 0.18s;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     border-left: 3px solid transparent;
-    font-size: 0.98rem;
+    font-size: 1.08rem;
+    background: transparent;
+    color: #f4f4f4;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    box-shadow: none;
 }
 
 .menu-item .icon {
-    font-size: 1.7vh;
-    color: #e2c94c;
-    filter: none;
-    margin-right: 0.18vw;
+    font-size: 2.1vh;
+    color: #8E44FF;
+    filter: drop-shadow(0 0 2px #0008);
+    margin-right: 0.22vw;
+    transition: color 0.18s;
 }
 
 .menu-item .text {
     margin-left: 0.3vw;
     margin-right: 0.2vw;
-    transition: opacity 0.2s, width 0.2s;
+    transition: opacity 0.2s, width 0.2s, color 0.18s;
     white-space: nowrap;
     overflow: hidden;
-    color: #fffbe6;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    font-size: 0.97rem;
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: #f4f4f4;
 }
 
 .sidebar:not(.expanded) .menu-item .text {
@@ -146,14 +159,19 @@ const expanded = ref(false)
 
 .menu-item:hover,
 .menu-item.router-link-exact-active {
-    background: rgba(255, 221, 28, 0.08);
-    color: #ffd91c;
-    border-left: 3px solid #ffd91c;
+    background: linear-gradient(90deg, #8E44FF22 60%, transparent 100%);
+    color: #8E44FF;
+    border-left: 3px solid #8E44FF;
     border-bottom: 2.5px solid #232323;
-    box-shadow: none;
+    box-shadow: 0 2px 8px #8E44FF22;
+}
+
+.menu-item:hover .icon,
+.menu-item.router-link-exact-active .icon {
+    color: #fff;
 }
 
 .menu-item:not(:last-child) {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid #8E44FF11;
 }
 </style>

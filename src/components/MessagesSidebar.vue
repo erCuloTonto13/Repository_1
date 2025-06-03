@@ -126,12 +126,20 @@ async function searchFriends() {
 async function startChatWith(friendId) {
     const token = sessionStorage.getItem('token')
     try {
-        await axios.post('chats', {
+        const res = await axios.post('chats', {
             participante_2: friendId
         }, {
             headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         })
-        await loadMessages()
+        // El backend devuelve { chat: {...}, mensaje: ... }
+        const chat = res.data.chat || res.data;
+        // Abrir el chat directamente usando el objeto devuelto
+        emit('open-chat', {
+            id: chat.id,
+            usuario: chat.usuario || '', // Puedes completar con info extra si la tienes
+            avatar: chat.avatar || '',
+            ...chat
+        })
         searchFriendsQuery.value = ''
         searchFriendsResults.value = []
     } catch (e) {

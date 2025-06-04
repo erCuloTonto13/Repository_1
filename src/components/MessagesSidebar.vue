@@ -41,25 +41,21 @@ async function loadMessages() {
             headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         })
         let chatsArr = Array.isArray(response.data) ? response.data : []
-        // Obtener el id del usuario actual
-        let userId = null
-        try {
-            userId = token ? JSON.parse(atob(token.split('.')[1])).sub : null
-        } catch { userId = null }
-        // Mostrar el otro participante (no el usuario actual)
+        // Obtener todos los usuarios para buscar la foto y nombre
+        let usersResp = await axios.get('users', {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        })
+        let allUsers = Array.isArray(usersResp.data) ? usersResp.data : []
+        // Mapear cada chat con su usuario correspondiente
         messages.value = chatsArr.map(chat => {
-            // Para DM, solo hay 2 usuarios
-            const otherUser = Array.isArray(chat.users)
-                ? chat.users.find(u => String(u.id) !== String(userId))
-                : null
+            const userInfo = allUsers.find(u => String(u.usuario) === String(chat.name) || String(u.name) === String(chat.name))
             return {
                 id: chat.id,
-                usuario: otherUser?.usuario || 'Usuario',
-                avatar: otherUser?.foto
-                    ? (otherUser.foto.startsWith('http') ? otherUser.foto : 'http://localhost:8080/' + otherUser.foto)
+                usuario: chat.name || (userInfo?.usuario || userInfo?.name || 'Usuario'),
+                avatar: userInfo?.foto
+                    ? (userInfo.foto.startsWith('http') ? userInfo.foto : 'http://localhost:8080/' + userInfo.foto)
                     : '/icons/favicon.svg',
-                user_id: otherUser?.id,
-                // Puedes añadir más campos si quieres mostrar último mensaje, etc.
+                user_id: userInfo?.id,
             }
         })
         searchError.value = ''
@@ -162,8 +158,8 @@ const filteredMessages = computed(() => {
 })
 
 function openChatSidebar(chat) {
-    // Pasa el user_id del otro usuario, que es lo que Chatify espera
-    emit('open-chat', { id: chat.user_id, usuario: chat.usuario, avatar: chat.avatar })
+    // Pasa el chat_id real (msg.id) y la info del usuario al ChatSidebar
+    emit('open-chat', { id: chat.id, usuario: chat.usuario, avatar: chat.avatar })
 }
 
 onMounted(loadMessages)
@@ -217,7 +213,7 @@ onMounted(loadMessages)
                     </div>
                     <div class="message-card-content">
                         <div class="message-card-user">{{ msg.usuario }}</div>
-                        <div class="message-card-text">{{ msg.texto }}</div>
+                        <div class="message-card-text">{{ msg.texto || '' }}</div>
                     </div>
                 </div>
             </div>

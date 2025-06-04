@@ -45,10 +45,11 @@ async function fetchMessages() {
         })
         messages.value = Array.isArray(res.data) ? res.data.map(msg => ({
             id: msg.id,
-            texto: msg.texto,
-            emisor_id: msg.emisor_id,
+            texto: msg.content,
+            emisor_id: msg.user_id,
             created_at: msg.created_at,
-            imagen: msg.imagen || null,
+            imagen: msg.image_path ? ('http://localhost:8080/storage/' + msg.image_path) : null,
+            user: msg.user
         })) : []
     } catch (e) {
         error.value = e.response?.data?.error || 'Error al cargar mensajes'
@@ -122,10 +123,11 @@ onMounted(() => {
                 if (!messages.value.some(m => m.id === e.message.id)) {
                     messages.value.push({
                         id: e.message.id,
-                        texto: e.message.texto,
-                        emisor_id: e.message.emisor_id,
+                        texto: e.message.content,
+                        emisor_id: e.message.user_id,
                         created_at: e.message.created_at,
-                        imagen: e.message.imagen || null,
+                        imagen: e.message.image_path ? ('http://localhost:8080/storage/' + e.message.image_path) : null,
+                        user: e.message.user
                     });
                     scrollToBottom();
                 }
@@ -176,7 +178,7 @@ onUnmounted(() => {
                                     <span v-if="editingError" class="edit-error">{{ editingError }}</span>
                                 </template>
                                 <template v-else>
-                                    <span class="chat-message-text">{{ msg.texto }}</span>
+                                    <span class="chat-message-text">{{ msg.texto }}<br><small style="color:#bfa600;">[debug: {{ JSON.stringify(msg) }}]</small></span>
                                     <div v-if="msg.imagen" class="chat-message-image-wrapper">
                                         <img :src="msg.imagen" class="chat-message-image" alt="Imagen enviada" />
                                     </div>

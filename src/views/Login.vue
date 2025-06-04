@@ -1,6 +1,6 @@
 <script setup>
 
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
@@ -25,6 +25,16 @@ function animateAndRedirectHome() {
     router.push('/')
   }, 700) // Duración de la animación
 }
+
+
+// Redirigir si ya está logeado
+onMounted(() => {
+  if (sessionStorage.getItem('token')) {
+    setTimeout(() => {
+      router.push('/')
+    }, 1500)
+  }
+})
 
 
 // Envía email y contraseña a la API

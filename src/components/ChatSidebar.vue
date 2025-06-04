@@ -39,8 +39,8 @@ async function fetchMessages() {
     error.value = ''
     try {
         const token = getToken()
-        // Obtener mensajes del chat con el usuario (props.chatId)
-        const res = await axios.get(`messages/${props.chatId}`, {
+        // Cambiado endpoint a /chats/{id}/messages
+        const res = await axios.get(`chats/${props.chatId}/messages`, {
             headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         })
         messages.value = Array.isArray(res.data) ? res.data.map(msg => ({
@@ -57,19 +57,34 @@ async function fetchMessages() {
     }
 }
 
+const selectedImage = ref(null)
+
+function handleImageChange(e) {
+    const file = e.target.files[0]
+    if (file && file.type.startsWith('image/')) {
+        selectedImage.value = file
+    } else {
+        selectedImage.value = null
+    }
+}
+
 async function sendMessage() {
-    if (!newMessage.value.trim()) return
+    if (!newMessage.value.trim() && !selectedImage.value) return
     sending.value = true
     error.value = ''
     try {
         const token = getToken()
-        await axios.post('messages', {
-            chat_id: props.chatId,
-            texto: newMessage.value.trim()
-        }, {
-            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        const formData = new FormData()
+        formData.append('chat_id', props.chatId)
+        if (newMessage.value.trim()) formData.append('content', newMessage.value.trim())
+        if (selectedImage.value) formData.append('image', selectedImage.value)
+        await axios.post('messages', formData, {
+            headers: {
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            }
         })
         newMessage.value = ''
+        selectedImage.value = null
         // No recargamos todos los mensajes aquí, dejamos que Echo lo añada
         scrollToBottom()
     } catch (e) {
@@ -162,6 +177,9 @@ onUnmounted(() => {
                                 </template>
                                 <template v-else>
                                     <span class="chat-message-text">{{ msg.texto }}</span>
+                                    <div v-if="msg.imagen" class="chat-message-image-wrapper">
+                                        <img :src="msg.imagen" class="chat-message-image" alt="Imagen enviada" />
+                                    </div>
                                     <button v-if="String(msg.emisor_id) === String(userId)" class="edit-btn"
                                         title="Editar mensaje" @click="startEditing(msg)"><i
                                             class="bi bi-pencil-square"></i></button>
@@ -175,7 +193,9 @@ onUnmounted(() => {
                     <textarea v-model="newMessage" class="chat-input-textarea" placeholder="Escribe un mensaje..."
                         :disabled="sending" @keydown="handleKeydown" maxlength="500" rows="2"
                         :rows="Math.min(4, newMessage.split('\n').length)" style="resize: vertical;" />
-                    <button class="chat-send-btn" :disabled="sending || !newMessage.trim()"
+                    <input type="file" accept="image/*" @change="handleImageChange" :disabled="sending"
+                        style="margin-left:0.5em;max-width:120px;" />
+                    <button class="chat-send-btn" :disabled="sending || (!newMessage.trim() && !selectedImage)"
                         @click="sendMessage">Enviar</button>
                 </div>
             </aside>
@@ -447,6 +467,19 @@ onUnmounted(() => {
 .chat-message.editing {
     background: #181818;
     box-shadow: 0 2px 8px #8E44FF44;
+}
+
+.chat-message-image-wrapper {
+    margin-top: 0.5em;
+    text-align: left;
+}
+
+.chat-message-image {
+    max-width: 220px;
+    max-height: 180px;
+    border-radius: 0.7em;
+    box-shadow: 0 2px 8px #8E44FF33;
+    display: block;
 }
 
 @media (max-width: 600px) {

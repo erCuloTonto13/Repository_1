@@ -1,529 +1,503 @@
 <script setup>
-import { ref, onMounted, watch, defineProps, defineEmits, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
-import echo from '../echo.js'; // Ajusta la ruta si es necesario
+import { defineEmits } from 'vue'
 
-axios.defaults.baseURL = 'http://localhost:8080/api/';
-const props = defineProps({
-    chatId: { type: [String, Number], required: true },
-    visible: Boolean,
-    user: Object // info del usuario con el que se chatea
-})
-const emit = defineEmits(['close'])
+axios.defaults.baseURL = 'http://localhost:8080/api/'
 
-const messages = ref([])
-const loading = ref(false)
-const error = ref('')
-const newMessage = ref('')
-const sending = ref(false)
-const userId = ref(null)
-const editingMessageId = ref(null)
-const editingText = ref('')
-const editingError = ref('')
+const emit = defineEmits(['open-chat'])
 
-function getToken() {
-    return sessionStorage.getItem('token')
+let messages = ref([])
+let searchMessages = ref('')
+let loadingMessages = ref(true)
+let searchResults = ref([])
+let searchError = ref('')
+
+// Nueva funcionalidad: búsqueda de amigos y creación de chats
+let searchFriendsQuery = ref('')
+let searchingFriends = ref(false)
+let searchFriendsResults = ref([])
+let searchFriendsError = ref('')
+
+// Helper to get user info by ID
+async function getUserInfo(id, token) {
+    try {
+        let response = await axios.get(`users/${id}`,
+            token ? { headers: { 'Authorization': `Bearer ${token}` } } : undefined
+        )
+        return response.data
+    } catch {
+        return null
+    }
 }
 
-function getUserIdFromToken() {
-    const token = getToken()
-    if (!token) return null
+// Cargar chats reales desde el backend propio (no Chatify)
+async function loadMessages() {
+    loadingMessages.value = true
     try {
-        return JSON.parse(atob(token.split('.')[1])).sub
-    } catch { return null }
-}
-
-async function fetchMessages() {
-    if (!props.chatId) return
-    loading.value = true
-    error.value = ''
-    try {
-        const token = getToken()
-        // Cambiado endpoint a /chats/{id}/messages
-        const res = await axios.get(`chats/${props.chatId}/messages`, {
+        const token = sessionStorage.getItem('token')
+        // Obtener los chats del usuario autenticado
+        let response = await axios.get('chatsOfUser', {
             headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         })
-        messages.value = Array.isArray(res.data) ? res.data.map(msg => ({
-            id: msg.id,
-            texto: msg.content,
-            emisor_id: msg.user_id,
-            created_at: msg.created_at,
-            imagen: msg.image_path ? ('http://localhost:8080/storage/' + msg.image_path) : null,
-            user: msg.user
-        })) : []
-    } catch (e) {
-        error.value = e.response?.data?.error || 'Error al cargar mensajes'
-    } finally {
-        loading.value = false
-    }
-}
-
-const selectedImage = ref(null)
-
-function handleImageChange(e) {
-    const file = e.target.files[0]
-    if (file && file.type.startsWith('image/')) {
-        selectedImage.value = file
-    } else {
-        selectedImage.value = null
-    }
-}
-
-async function sendMessage() {
-    if (!newMessage.value.trim() && !selectedImage.value) return
-    sending.value = true
-    error.value = ''
-    try {
-        const token = getToken()
-        const formData = new FormData()
-        formData.append('chat_id', props.chatId)
-        if (newMessage.value.trim()) formData.append('content', newMessage.value.trim())
-        if (selectedImage.value) formData.append('image', selectedImage.value)
-        await axios.post('messages', formData, {
-            headers: {
-                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-            }
-        })
-        newMessage.value = ''
-        selectedImage.value = null
-        // No recargamos todos los mensajes aquí, dejamos que Echo lo añada
-        scrollToBottom()
-    } catch (e) {
-        error.value = e.response?.data?.error || 'Error al enviar mensaje'
-    } finally {
-        sending.value = false
-    }
-}
-
-function scrollToBottom() {
-    setTimeout(() => {
-        const el = document.querySelector('.chat-messages')
-        if (el) el.scrollTop = el.scrollHeight
-    }, 100)
-}
-
-watch(() => props.chatId, fetchMessages)
-onMounted(() => {
-    userId.value = getUserIdFromToken()
-    fetchMessages()
-
-    if (props.chatId) {
-        echo.join(`chat.${props.chatId}`)
-            .here((users) => {
-                // Usuarios conectados al chat
-            })
-            .joining((user) => {
-                // Usuario se une al chat
-            })
-            .leaving((user) => {
-                // Usuario sale del chat
-            })
-            .listen('MessageSent', (e) => {
-                // Solo añadir si no existe ya (por id)
-                if (!messages.value.some(m => m.id === e.message.id)) {
-                    messages.value.push({
-                        id: e.message.id,
-                        texto: e.message.content,
-                        emisor_id: e.message.user_id,
-                        created_at: e.message.created_at,
-                        imagen: e.message.image_path ? ('http://localhost:8080/storage/' + e.message.image_path) : null,
-                        user: e.message.user
-                    });
-                    scrollToBottom();
+        let chatsArr = Array.isArray(response.data) ? response.data : []
+        // Obtener el id del usuario actual
+        let myId = null
+        try {
+            myId = token ? JSON.parse(atob(token.split('.')[1])).sub : null
+        } catch { myId = null }
+        // Para cada chat, obtener el otro usuario (no el actual)
+        const chatDetails = await Promise.all(chatsArr.map(async chat => {
+            // Llama a /chats/{id} para obtener los usuarios
+            try {
+                const chatRes = await axios.get(`chats/${chat.id}`, {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                })
+                const users = chatRes.data.users || []
+                const otherUser = users.find(u => String(u.id) !== String(myId)) || users[0] || null
+                return {
+                    id: chat.id,
+                    usuario: otherUser?.usuario || otherUser?.name || 'Usuario',
+                    avatar: otherUser?.foto
+                        ? (otherUser.foto.startsWith('http') ? otherUser.foto : 'http://localhost:8080/' + otherUser.foto)
+                        : '/icons/favicon.svg',
+                    user_id: otherUser?.id,
                 }
-            });
+            } catch {
+                return {
+                    id: chat.id,
+                    usuario: 'Usuario',
+                    avatar: '/icons/favicon.svg',
+                    user_id: null,
+                }
+            }
+        }))
+        messages.value = chatDetails
+        searchError.value = ''
+    } catch (e) {
+        messages.value = []
+        searchError.value = 'No se pudieron cargar los chats: ' + (e.response?.data?.message || e.message || e)
+        console.error('Error al cargar chats:', e)
+    } finally {
+        loadingMessages.value = false
     }
-});
+}
 
-// No olvides salir del canal cuando cambias de chat o destruyes el componente
-onUnmounted(() => {
-    if (props.chatId) {
-        echo.leave(`chat.${props.chatId}`);
+// Buscar amigos para crear chat
+async function searchFriends() {
+    searchFriendsError.value = ''
+    searchFriendsResults.value = []
+    if (!searchFriendsQuery.value.trim()) return
+    searchingFriends.value = true
+    try {
+        const token = sessionStorage.getItem('token')
+        let response = await axios.get('friendshipsOfUser', {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        })
+        let data = response.data
+        let usuario_id = null
+        try {
+            usuario_id = token ? JSON.parse(atob(token.split('.')[1])).sub : null
+        } catch { usuario_id = null }
+        // Solo amigos aceptados
+        let accepted = Array.isArray(data) ? data.filter(f => String(f.accepted) === '1') : []
+        // Obtener todos los usuarios
+        let usersResp = await axios.get('users', {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        })
+        let allUsers = Array.isArray(usersResp.data) ? usersResp.data : []
+        // Match amigo info
+        let friends = accepted.map(friend => {
+            let amigoRealId = String(friend.usuario_id) === String(usuario_id)
+                ? friend.amigo_id
+                : friend.usuario_id
+            const info = allUsers.find(u => String(u.id) == String(amigoRealId))
+            if (!info) return null
+            return {
+                id: info.id,
+                usuario: info.usuario,
+                foto: info.foto,
+            }
+        }).filter(Boolean)
+        // Filtrar por búsqueda
+        let q = searchFriendsQuery.value.trim().toLowerCase()
+        searchFriendsResults.value = friends.filter(f =>
+            (f.usuario || '').toLowerCase().includes(q)
+        )
+        if (!searchFriendsResults.value.length) {
+            searchFriendsError.value = 'No se encontraron amigos.'
+        }
+    } catch {
+        searchFriendsError.value = 'No se pudo buscar amigos.'
+    } finally {
+        searchingFriends.value = false
     }
-});
+}
+
+// Crear chat con amigo usando el endpoint propio (adaptado a nuevo formato)
+async function startChatWith(friendId) {
+    const token = sessionStorage.getItem('token')
+    try {
+        const res = await axios.post('chats', {
+            user_ids: [friendId], // El backend espera un array de IDs
+            name: null,           // Puedes pasar un nombre si quieres grupo
+            is_group: false       // Es un DM
+        }, {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        })
+        // El backend devuelve { chat: {...}, ... }
+        const chat = res.data.chat || res.data;
+        await loadMessages(); // <-- Recarga la lista de chats tras crear uno nuevo
+        emit('open-chat', {
+            id: chat.id,
+            usuario: chat.users?.find(u => u.id !== JSON.parse(atob(token.split('.')[1])).sub)?.usuario || '',
+            avatar: chat.users?.find(u => u.id !== JSON.parse(atob(token.split('.')[1])).sub)?.foto || '',
+            ...chat
+        })
+        searchFriendsQuery.value = ''
+        searchFriendsResults.value = []
+    } catch (e) {
+        if (e.response && e.response.data && e.response.data.error) {
+            searchFriendsError.value = e.response.data.error
+        } else {
+            searchFriendsError.value = 'No se pudo crear el chat.'
+        }
+    }
+}
+
+const filteredMessages = computed(() => {
+    if (!searchMessages.value.trim()) return messages.value
+    return messages.value.filter(m =>
+        (m.usuario || '').toLowerCase().includes(searchMessages.value.trim().toLowerCase()) ||
+        (m.texto || '').toLowerCase().includes(searchMessages.value.trim().toLowerCase())
+    )
+})
+
+function openChatSidebar(chat) {
+    // Pasa el chat_id real (msg.id) y la info del usuario al ChatSidebar
+    emit('open-chat', { id: chat.id, usuario: chat.usuario, avatar: chat.avatar })
+}
+
+onMounted(loadMessages)
 </script>
 
 <template>
-    <transition name="slide-chat-sidebar">
-        <div v-if="visible" class="chat-sidebar-overlay" @click.self="emit('close')" tabindex="-1">
-            <aside class="chat-sidebar">
-                <button class="close-btn" @click="emit('close')" aria-label="Cerrar chat">&times;</button>
-                <div class="chat-header">
-                    <img v-if="user?.avatar" :src="user.avatar" class="chat-avatar" alt="avatar" />
-                    <span class="chat-username">{{ user?.usuario || 'Usuario' }}</span>
-                </div>
-                <div class="chat-messages">
-                    <div v-if="loading" class="chat-loading">Cargando...</div>
-                    <div v-else-if="error" class="chat-error">{{ error }}</div>
-                    <div v-else-if="messages.length">
-                        <div v-for="msg in messages" :key="msg.id"
-                            :class="['chat-message-row', { 'own-row': String(msg.emisor_id) === String(userId), 'other-row': String(msg.emisor_id) !== String(userId) }]">
-                            <div
-                                :class="['chat-message', { 'own-message': String(msg.emisor_id) === String(userId), 'editing': editingMessageId === msg.id }]">
-                                <template v-if="editingMessageId === msg.id">
-                                    <div class="edit-inline-container full-width-edit">
-                                        <textarea v-model="editingText" class="editing-textarea full-width-edit"
-                                            @keydown="e => handleEditKeydown(e, msg)" @blur="cancelEdit" maxlength="500"
-                                            rows="2" :rows="Math.min(4, editingText.split('\n').length)"
-                                            style="resize: vertical;" />
-                                        <div class="edit-btn-group">
-                                            <button class="edit-btn" @click="saveEdit(msg)" title="Guardar edición">
-                                                <i class="bi bi-check2-square"></i>
-                                            </button>
-                                            <button class="edit-btn" @click="cancelEdit" title="Cancelar edición">
-                                                <i class="bi bi-x-lg"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <span v-if="editingError" class="edit-error">{{ editingError }}</span>
-                                </template>
-                                <template v-else>
-                                    <span class="chat-message-text">{{ msg.texto }}<br><small style="color:#bfa600;">[debug: {{ JSON.stringify(msg) }}]</small></span>
-                                    <div v-if="msg.imagen" class="chat-message-image-wrapper">
-                                        <img :src="msg.imagen" class="chat-message-image" alt="Imagen enviada" />
-                                    </div>
-                                    <button v-if="String(msg.emisor_id) === String(userId)" class="edit-btn"
-                                        title="Editar mensaje" @click="startEditing(msg)"><i
-                                            class="bi bi-pencil-square"></i></button>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
-                    <div v-else class="chat-empty">No hay mensajes.</div>
-                </div>
-                <div class="chat-input-bar">
-                    <textarea v-model="newMessage" class="chat-input-textarea" placeholder="Escribe un mensaje..."
-                        :disabled="sending" @keydown="handleKeydown" maxlength="500" rows="2"
-                        :rows="Math.min(4, newMessage.split('\n').length)" style="resize: vertical;" />
-                    <input type="file" accept="image/*" @change="handleImageChange" :disabled="sending"
-                        style="margin-left:0.5em;max-width:120px;" />
-                    <button class="chat-send-btn" :disabled="sending || (!newMessage.trim() && !selectedImage)"
-                        @click="sendMessage">Enviar</button>
-                </div>
-            </aside>
+    <aside class="messages-list-aside">
+        <!-- Buscar amigos para crear chat -->
+        <div class="messages-search-header">
+            <h2 class="messages-list-title">Nuevo chat</h2>
+            <form class="messages-search-form" @submit.prevent="searchFriends">
+                <input v-model="searchFriendsQuery" type="text" placeholder="Buscar amigo para chatear"
+                    class="messages-search-input" />
+                <button type="submit" class="messages-search-btn" :disabled="searchingFriends">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
         </div>
-    </transition>
+        <div class="messages-search-results-rect">
+            <div v-if="searchingFriends" class="search-loading">Buscando...</div>
+            <div v-else-if="searchFriendsError" class="search-error">{{ searchFriendsError }}</div>
+            <div v-else-if="searchFriendsResults.length">
+                <div v-for="user in searchFriendsResults" :key="user.id" class="user-card-rect">
+                    <div class="user-card-img">
+                        <img :src="user.foto ? (user.foto.startsWith('http') ? user.foto : 'http://localhost:8080/' + user.foto) : '/icons/favicon.svg'"
+                            alt="avatar" width="36" height="36" />
+                    </div>
+                    <div class="user-card-content">
+                        <div class="user-card-user">{{ user.usuario }}</div>
+                        <button class="start-chat-btn" @click="startChatWith(user.id)">Chatear</button>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="search-placeholder">Busca amigos para chatear.</div>
+        </div>
+        <!-- Lista de chats existentes -->
+        <div class="messages-search-header" style="border-top: 1px solid rgba(255,255,255,0.08); margin-top: 0.5em;">
+            <h2 class="messages-list-title">Chats</h2>
+            <form class="messages-search-form" @submit.prevent>
+                <input v-model="searchMessages" type="text" placeholder="Buscar Chat" class="messages-search-input" />
+            </form>
+        </div>
+        <div class="messages-list-rect">
+            <div v-if="loadingMessages" class="loading-messages-msg">Cargando...</div>
+            <div v-else-if="searchError" class="search-error">{{ searchError }}</div>
+            <div v-else-if="filteredMessages.length">
+                <div v-for="msg in filteredMessages" :key="msg.id" class="message-card-rect"
+                    @click="openChatSidebar(msg)" style="cursor:pointer;">
+                    <div class="message-card-img">
+                        <img :src="msg.avatar" alt="avatar" width="40" height="40" />
+                    </div>
+                    <div class="message-card-content">
+                        <div class="message-card-user">{{ msg.usuario }}</div>
+                        <div class="message-card-text">{{ msg.texto || '' }}</div>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="no-messages-msg">No hay chats disponibles.</div>
+        </div>
+    </aside>
 </template>
 
 <style scoped>
-.chat-sidebar-overlay {
+.messages-list-aside {
+    background: black;
+    border-radius: 0.417vw;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    padding-top: 0.583vw;
     position: fixed;
     top: 0;
-    right: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 3000;
-    display: flex;
-    justify-content: flex-end;
-    align-items: stretch;
-}
-
-.chat-sidebar {
-    background: #181818;
-    width: 400px;
-    max-width: 98vw;
-    height: 100vh;
-    box-shadow: -2px 0 16px #0008;
-    border-left: 2px solid #8E44FF;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    animation: slideInSidebar 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.close-btn {
-    position: absolute;
-    top: 1.2rem;
-    right: 1.2rem;
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 2rem;
-    cursor: pointer;
-    z-index: 10;
-    transition: color 0.18s;
-}
-
-.close-btn:hover {
+    left: 0;
+    right: auto;
+    bottom: 0;
     color: #8E44FF;
-}
-
-.chat-header {
-    display: flex;
-    align-items: center;
-    gap: 1em;
-    padding: 1.5em 1.5em 1em 1.5em;
-    border-bottom: 1px solid #8E44FF44;
-}
-
-.chat-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    object-fit: cover;
-    background: #161515;
-    border: 2px solid #8E44FF44;
-}
-
-.chat-username {
-    color: #fff;
-    font-weight: 600;
-    font-size: 1.1em;
-}
-
-.chat-messages {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    padding: 1.2em;
+    z-index: 2000;
+    border: 0.078vw solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0.208vw 0.729vw rgba(0, 0, 0, 0.22);
+    min-width: 12.5vw;
+    max-width: 100vw;
     display: flex;
     flex-direction: column;
-    gap: 0.7em;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+}
+
+.messages-search-header {
+    padding: 0 1vw 0.417vw 1vw;
+    border-bottom: 0.052vw solid rgba(255, 255, 255, 0.1);
     background: transparent;
 }
 
-.chat-message-row {
-    display: flex;
-    width: 100%;
-    margin-bottom: 0.2em;
+.messages-list-title {
+    text-transform: uppercase;
+    font-size: 0.79vw;
+    font-weight: 600;
+    margin: 0 0 0.417vw 0;
+    letter-spacing: 0.04em;
 }
 
-.own-row {
-    justify-content: flex-end;
-}
-
-.other-row {
-    justify-content: flex-start;
-}
-
-.chat-message {
-    background: #232323;
-    color: #fff;
-    border-radius: 1.2em;
-    padding: 0.7em 1.2em;
-    max-width: 70%;
-    box-shadow: 0 2px 8px #8E44FF22;
-    font-size: 1em;
-    position: relative;
-    word-break: break-word;
-}
-
-.chat-loading,
-.chat-error,
-.chat-empty {
-    color: #fffbe6;
-    text-align: center;
-    font-size: 1em;
-    margin: 2em 0;
-}
-
-.chat-input-bar {
+.messages-search-form {
     display: flex;
     align-items: center;
-    padding: 1em 1.5em;
-    border-top: 1px solid #8E44FF44;
+    gap: 0.417vw;
+    margin-bottom: 0.167vw;
+}
+
+.messages-search-input {
+    flex: 1;
+    border-radius: 0.313vw;
+    border: 0.078vw solid #8E44FF;
+    padding: 0.375vw 0.75vw;
+    font-size: 0.833vw;
     background: #181818;
-}
-
-.chat-input {
-    flex: 1;
-    border-radius: 1.2em;
-    border: 1.5px solid #8E44FF;
-    padding: 0.7em 1.2em;
-    font-size: 1em;
-    background: #232323;
     color: #fff;
     outline: none;
-    margin-right: 1em;
+    transition: border 0.18s;
 }
 
-.chat-input-textarea {
-    flex: 1;
-    border-radius: 1.2em;
-    border: 1.5px solid #8E44FF;
-    padding: 0.7em 1.2em;
-    font-size: 1em;
-    background: #232323;
-    color: #fff;
-    outline: none;
-    margin-right: 1em;
-    min-height: 3.2em;
-    max-height: 8em;
-    overflow-y: auto;
-    resize: vertical;
-    line-height: 1.4;
-    box-sizing: border-box;
-    width: 100%;
+.messages-search-input:focus {
+    border-color: #00FFC6;
 }
 
-.chat-send-btn {
+.messages-search-btn {
     background: #8E44FF;
     color: #fff;
     border: none;
-    border-radius: 1.2em;
-    padding: 0.7em 1.5em;
-    font-size: 1em;
-    font-weight: 600;
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-
-.edit-btn {
-    background: none;
-    border: none;
-    color: #bfa600;
-    font-size: 1.1em;
-    margin-left: 0.7em;
+    border-radius: 0.313vw;
+    padding: 0.375vw 0.75vw;
+    font-size: 0.917vw;
     cursor: pointer;
-    opacity: 0.7;
-    transition: color 0.18s, opacity 0.18s;
-}
-
-.edit-btn:hover {
-    color: #fffbe6;
-    opacity: 1;
-}
-
-.own-message {
-    background: linear-gradient(90deg, #8E44FF 80%, #6c2bd7 100%);
-    color: #fff;
-    box-shadow: 0 2px 12px #8E44FF33;
-    align-items: flex-end;
-}
-
-.edit-inline-container {
+    transition: background 0.18s;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 90%;
-    margin: 0 auto;
-    gap: 0.5em;
 }
 
-.full-width-edit {
-    width: 100% !important;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
+.messages-search-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
-.edit-inline-container.full-width-edit {
-    width: 100% !important;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
+.messages-search-btn:hover {
+    background: #00FFC6;
+    color: #181818;
 }
 
-.editing-input {
-    width: 90%;
-    min-width: 0;
-    flex: 1 1 0;
-    border-radius: 1em;
-    border: 1.5px solid #8E44FF;
-    padding: 0.5em 1em;
-    font-size: 1em;
-    background: #232323;
+.search-placeholder {
     color: #fff;
-    outline: none;
-    margin-right: 0;
+    text-align: center;
+    font-size: 0.833vw;
+    padding: 0.583vw 0.167vw;
+    padding-left: 1vw;
+    padding-right: 1vw;
 }
 
-.editing-textarea {
-    width: 90%;
-    min-width: 0;
-    flex: 1 1 0;
-    border-radius: 1em;
-    border: 1.5px solid #8E44FF;
-    padding: 0.7em 1.2em;
-    font-size: 1.08em;
-    background: #232323;
-    color: #fff;
-    outline: none;
-    margin-right: 0;
-    min-height: 3.2em;
-    max-height: 8em;
+.messages-search-results-rect {
+    max-height: 40vh;
+    min-height: 6vh;
     overflow-y: auto;
-    resize: vertical;
-    line-height: 1.4;
-    box-sizing: border-box;
-}
-
-.edit-btn-group {
+    padding: 0.5em 1.2rem 0.5em 1.2rem;
+    background: transparent;
     display: flex;
-    flex-direction: row;
-    gap: 0.2em;
+    flex-direction: column;
+    gap: 0.7em;
+}
+
+.messages-list-rect {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 0.417vw 1vw 1vw 1vw;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 0.583vw;
+    min-height: 30vh;
+    max-height: 75vh;
+    border-bottom: 0.052vw solid rgba(255, 255, 255, 0.1);
+}
+
+.loading-messages-msg {
+    color: #fff;
+    text-align: center;
+    font-size: 1.083vw;
+    font-weight: 500;
+    margin: 3vh 0 2vh 0;
+    letter-spacing: 0.04em;
+}
+
+.message-card-rect {
+    display: flex;
     align-items: center;
-    justify-content: flex-end;
-    margin-top: 0.3em;
-}
-
-.edit-error {
-    color: #ffbaba;
-    font-size: 0.95em;
-    margin-left: 0.5em;
-}
-
-.chat-message.editing {
     background: #181818;
-    box-shadow: 0 2px 8px #8E44FF44;
+    border-radius: 0.521vw;
+    box-shadow: 0 0.104vw 0.417vw #8e44ff22;
+    padding: 0.417vw 0.833vw;
+    gap: 0.833vw;
+    margin-bottom: 0.104vw;
+    min-height: 2.5vw;
+    transition: box-shadow 0.18s, background 0.18s;
 }
 
-.chat-message-image-wrapper {
-    margin-top: 0.5em;
-    text-align: left;
+.message-card-rect:hover {
+    background: #232323;
+    box-shadow: 0 0.208vw 0.833vw #8e44ff44;
 }
 
-.chat-message-image {
-    max-width: 220px;
-    max-height: 180px;
-    border-radius: 0.7em;
-    box-shadow: 0 2px 8px #8E44FF33;
-    display: block;
+.message-card-img img {
+    width: 2.083vw;
+    height: 2.083vw;
+    border-radius: 0.417vw;
+    object-fit: cover;
+    background: #161515;
+    border: 0.104vw solid #8E44FF44;
+    transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@media (max-width: 600px) {
-    .chat-sidebar {
-        width: 98vw;
-        min-width: 0;
-        max-width: 100vw;
-    }
-
-    .edit-inline-container {
-        flex-direction: column;
-        align-items: stretch;
-        width: 98%;
-    }
-
-    .edit-inline-container.full-width-edit {
-        width: 100% !important;
-    }
-
-    .editing-textarea.full-width-edit {
-        width: 100% !important;
-    }
-
-    .chat-input-textarea {
-        width: 100%;
-    }
+.message-card-img img:hover {
+    transform: translateY(-0.313vw) scale(1.13);
+    box-shadow: 0 0.417vw 1.25vw #8e44ff55, 0 0.104vw 0.417vw #0006;
+    z-index: 2;
 }
 
-.slide-chat-sidebar-enter-active,
-.slide-chat-sidebar-leave-active {
-    transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+.message-card-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    color: #fff;
 }
 
-.slide-chat-sidebar-enter-from,
-.slide-chat-sidebar-leave-to {
-    transform: translateX(100%);
-    opacity: 0;
+.message-card-user {
+    font-weight: 600;
+    font-size: 0.891vw;
+    margin-bottom: 0.167vw;
 }
 
-.slide-chat-sidebar-enter-to,
-.slide-chat-sidebar-leave-from {
-    transform: translateX(0);
-    opacity: 1;
+.message-card-text {
+    font-size: 0.812vw;
+    color: #bfa600;
+}
+
+.no-messages-msg {
+    color: #fffbe6;
+    font-size: 0.833vw;
+    text-align: center;
+    padding: 0.583vw 0.167vw;
+    padding-left: 1vw;
+    padding-right: 1vw;
+}
+
+.search-loading {
+    color: #00FFC6;
+    text-align: center;
+    font-size: 0.917vw;
+    margin: 2vh 0;
+}
+
+.user-card-rect {
+    display: flex;
+    align-items: center;
+    background: #181818;
+    border-radius: 0.521vw;
+    box-shadow: 0 0.104vw 0.417vw #8e44ff22;
+    padding: 0.333vw 0.667vw;
+    gap: 0.521vw;
+    margin-bottom: 0.104vw;
+    min-height: 2.29vw;
+    max-height: 2.92vw;
+    transition: box-shadow 0.18s, background 0.18s;
+}
+
+.user-card-rect:hover {
+    background: #232323;
+    box-shadow: 0 0.208vw 0.833vw #8e44ff44;
+}
+
+.user-card-img img {
+    width: 1.875vw;
+    height: 1.875vw;
+    border-radius: 0.417vw;
+    object-fit: cover;
+    background: #161515;
+    border: 0.104vw solid #8E44FF44;
+    transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.user-card-img img:hover {
+    transform: translateY(-0.26vw) scale(1.11);
+    box-shadow: 0 0.313vw 0.938vw #8e44ff55, 0 0.104vw 0.417vw #0006;
+    z-index: 2;
+}
+
+.user-card-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.521vw;
+}
+
+.user-card-user {
+    font-weight: 600;
+    font-size: 0.84vw;
+    color: #fff;
+}
+
+.start-chat-btn {
+    background: #8E44FF;
+    color: #fff;
+    border: none;
+    border-radius: 0.313vw;
+    padding: 0.167vw 0.75vw;
+    font-size: 0.812vw;
+    font-weight: 500;
+    margin-left: 0.26vw;
+    transition: background 0.18s, color 0.18s;
+    box-shadow: 0 0.104vw 0.417vw #8e44ff22;
+    cursor: pointer;
+}
+
+.start-chat-btn:hover {
+    background: #00FFC6;
+    color: #181818;
 }
 </style>

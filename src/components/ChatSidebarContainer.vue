@@ -1,6 +1,6 @@
 <script setup>
-import MessagesSidebar from './MessagesSidebar.vue';
-import ChatSidebar from './ChatSidebar.vue';
+import MessagesSidebar from './ChatSidebar.vue';
+import ChatSidebar from './MessagesSideBar.vue';
 import { ref, defineProps, defineEmits } from 'vue';
 
 const props = defineProps({

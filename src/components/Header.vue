@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import FriendsSidebar from './FriendsSidebar.vue'
-import MessagesSidebarContainer from './MessagesSidebarContainer.vue'
+import MessagesSidebarContainer from './ChatSidebarContainer.vue'
 
 const logoSrc = ref('/public/favicon2.png')
 const hasToken = ref(!!sessionStorage.getItem('token'))
